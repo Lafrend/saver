@@ -1,9 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Saver",
-  "$schema": "https://json.schemastore.org/chrome-manifest.json",
   "version": "0.1.0",
-  "description": "My Chrome Extension",
+  "description": "My Little Extension",
   "icons": {
     "16": "icons/icon_16.png",
     "32": "icons/icon_32.png",
@@ -11,24 +10,31 @@
     "128": "icons/icon_128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_title": "Saver",
     "default_popup": "popup.html"
   },
   "permissions": [
-    "storage"
+    "contextMenus",
+    "storage",
+    "alarms",
+    "activeTab",
+    "webNavigation"
   ],
   "content_scripts": [
     {
       "matches": [
         "<all_urls>"
       ],
-      "run_at": "document_idle",
       "js": [
         "contentScript.js"
       ]
     }
-  ]
+  ],
+  "omnibox": {
+    "keyword": "api"
+  }
 }
