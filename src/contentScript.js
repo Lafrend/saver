@@ -11,3 +11,14 @@
 // For more information on Content Scripts,
 // See https://developer.chrome.com/extensions/content_scripts
 
+// Обработчик сообщений от фонового скрипта
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.command === "getSelectedText") {
+    // Получаем выделенный текст и отправляем его в фоновый скрипт
+    const selectedText = window.getSelection().toString().trim();
+    chrome.runtime.sendMessage({
+      command: "saveItem",
+      selectedText: selectedText,
+    });
+  }
+});

@@ -1,5 +1,18 @@
 "use strict";
 
+// Load stored data on extension open
+chrome.runtime.onInstalled.addListener(function () {
+  loadItems();
+});
+
+function loadItems() {
+  // Load stored data on extension open
+  chrome.storage.local.get("yourItemList", function (data) {
+    const storedList = data.yourItemList || [];
+    console.log("Loaded items:", storedList);
+  });
+}
+
 chrome.runtime.onInstalled.addListener(function () {
   // Add a context menu item for selected text
   chrome.contextMenus.create({
@@ -33,16 +46,53 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
   }
 });
 
+// Используем chrome.commands.onCommand для обработки горячих клавиш
+chrome.commands.onCommand.addListener(function (command) {
+  if (command === "saveItemCommand") {
+    // Отправляем сообщение контент-скрипту с запросом выделенного текста
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      const activeTab = tabs[0];
+      chrome.tabs.sendMessage(activeTab.id, { command: "getSelectedText" });
+    });
+  }
+});
+
+// Обработчик сообщений от контент-скрипта
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.command === "saveItem" && request.selectedText) {
+    // Создаем новый элемент с выделенным текстом
+    const newItem = {
+      selectionText: request.selectedText,
+      createdAt: "",
+    };
+
+    // Сохраняем новый элемент с использованием существующей функции
+    saveItem(newItem);
+  }
+});
+
 function saveItem(info) {
   const selectedText = info.selectionText || "";
   const imageUrl = info.srcUrl || "";
   const linkUrl = info.linkUrl || "";
 
+  let itemType;
+  let itemData;
+
+  if (selectedText) {
+    itemType = "text";
+    itemData = selectedText;
+  } else if (imageUrl) {
+    itemType = "image";
+    itemData = imageUrl;
+  } else if (linkUrl) {
+    itemType = "link";
+    itemData = linkUrl;
+  }
   // Add the new item to your list (modify this according to your list structure)
   const newItem = {
-    text: selectedText,
-    imageUrl: imageUrl,
-    linkUrl: linkUrl,
+    itemType: itemType,
+    itemData: itemData,
     createdAt: "",
   };
 
@@ -76,17 +126,5 @@ function saveNewItem(item) {
     chrome.storage.local.set({ yourItemList: storedList }, function () {
       console.log("Item saved successfully:", item);
     });
-  });
-}
-// Load stored data on extension open
-chrome.runtime.onInstalled.addListener(function () {
-  loadItems();
-});
-
-function loadItems() {
-  // Load stored data on extension open
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
-    console.log("Loaded items:", storedList);
   });
 }
