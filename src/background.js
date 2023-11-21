@@ -16,21 +16,21 @@ function loadItems() {
 chrome.runtime.onInstalled.addListener(function () {
   // Add a context menu item for selected text
   chrome.contextMenus.create({
-    title: "Сохранить к себе",
+    title: "Сохранить текст",
     id: "save-selected-text",
     contexts: ["selection"],
   });
 
   // Add a context menu item for images
   chrome.contextMenus.create({
-    title: "Сохранить к себе",
+    title: "Сохранить изображение",
     id: "save-image",
     contexts: ["image"],
   });
 
   // Add a context menu item for clickable links
   chrome.contextMenus.create({
-    title: "Сохранить к себе",
+    title: "Сохранить ссылку",
     id: "save-link",
     contexts: ["link"],
   });
@@ -76,22 +76,17 @@ function saveItem(info) {
   const imageUrl = info.srcUrl || "";
   const linkUrl = info.linkUrl || "";
 
-  let itemType;
   let itemData;
 
   if (selectedText) {
-    itemType = "text";
     itemData = selectedText;
   } else if (imageUrl) {
-    itemType = "image";
-    itemData = imageUrl;
+    itemData = `(imgUrl:${imageUrl})`;
   } else if (linkUrl) {
-    itemType = "link";
-    itemData = linkUrl;
+    itemData = `(linkUrl:${linkUrl})`;
   }
   // Add the new item to your list (modify this according to your list structure)
   const newItem = {
-    itemType: itemType,
     itemData: itemData,
     createdAt: "",
   };
