@@ -7,26 +7,16 @@ console.log("This is a popup!");
 const listOfItems = document.getElementById("listOfItems");
 const clearAllButton = document.getElementById("clearAllButton");
 const createItemButton = document.getElementById("createItemButton");
-const rephreshButton = document.getElementById("rephreshButton");
+const refreshButton = document.getElementById("refreshButton");
 const sendMessage = document.getElementById("sendMessage");
 
 const loadingDiv = document.createElement("div");
 const loadingSpan = document.createElement("span");
 const backgroundDiv = document.createElement("div");
-backgroundDiv.style.backgroundColor = "#00000027";
-backgroundDiv.style.zIndex = "9998";
-backgroundDiv.style.width = "100%";
-backgroundDiv.style.height = "700px";
-backgroundDiv.style.position = "absolute";
+backgroundDiv.className = "background-div";
+loadingDiv.className = "loading-div";
 loadingSpan.textContent = "Loading...";
 loadingDiv.appendChild(loadingSpan);
-loadingDiv.style.position = "absolute";
-loadingDiv.style.left = "50%";
-loadingDiv.style.top = "50%";
-loadingDiv.style.width = "100px";
-loadingDiv.style.height = "50px";
-loadingDiv.style.zIndex = "9999";
-loadingDiv.style.backgroundColor = "green";
 console.log("show loading items");
 document.body.appendChild(loadingDiv);
 document.body.appendChild(backgroundDiv);
@@ -134,32 +124,6 @@ function editItem(item, content) {
   const cancelButton = createButtons("Cancel", "cancel-button", () =>
     cancelEdit(item, content, textarea)
   );
-  const insertImageButton = createButtons(
-    "Вставить изображение",
-    "insert-image-button",
-    function () {
-      // Вставка фрагмента с флажком изображения в текстовое поле
-      const cursorPos = textarea.selectionStart;
-      const textBeforeCursor = textarea.value.substring(0, cursorPos);
-      const textAfterCursor = textarea.value.substring(cursorPos);
-      const imageFragment = "(imgUrl:)";
-      const newText = textBeforeCursor + imageFragment + textAfterCursor;
-      textarea.value = newText;
-    }
-  );
-  const insertLinkButton = createButtons(
-    "Вставить ссылку",
-    "insert-link-button",
-    function () {
-      // Вставка фрагмента с флажком ссылки в текстовое поле
-      const cursorPos = textarea.selectionStart;
-      const textBeforeCursor = textarea.value.substring(0, cursorPos);
-      const textAfterCursor = textarea.value.substring(cursorPos);
-      const linkFragment = "(linkUrl:)";
-      const newText = textBeforeCursor + linkFragment + textAfterCursor;
-      textarea.value = newText;
-    }
-  );
 
   // Remove the existing buttons
   const div = content.parentElement;
@@ -173,29 +137,30 @@ function editItem(item, content) {
   // Append buttons to the list item
   div.appendChild(confirmButton);
   div.appendChild(cancelButton);
-  div.appendChild(insertLinkButton);
-  div.appendChild(insertImageButton);
+
+  textarea.focus();
 
   console.log("editing item....", item);
 }
 
 function createTextArea(content) {
   const textarea = document.createElement("textarea");
-  textarea.appendChild(document.createTextNode(content));
-  textarea.readOnly = false; // Disable editing
-  textarea.style.border = "none"; // No visible border
-  textarea.style.resize = "none"; // Disable resizing
-  textarea.style.backgroundColor = "transparent";
-  textarea.style.overflow = "hidden";
+  textarea.value = content;
 
-  // Auto-adjust height as the user types
+  // Используем событие 'input' для динамического изменения высоты при вводе
   textarea.addEventListener("input", function () {
-    // Устанавливаем высоту textarea в scrollHeight плюс небольшой отступ
-    textarea.style.height = textarea.scrollHeight + 10 + "px";
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+  });
+  // Используем событие 'focus' для корректного изменения высоты при редактировании
+  textarea.addEventListener("focus", function () {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
   });
 
   return textarea;
 }
+
 
 function confirmEdit(item, content, textarea) {
   console.log("prepare to confirm editing item:", item);
@@ -219,12 +184,8 @@ function confirmEdit(item, content, textarea) {
       // Remove confirm and cancel buttons
       const confirmButton = div.querySelector(".confirm-button");
       const cancelButton = div.querySelector(".cancel-button");
-      const insertLinkButton = div.querySelector(".insert-link-button");
-      const insertImageButton = div.querySelector(".insert-image-button");
       if (confirmButton) confirmButton.remove();
       if (cancelButton) cancelButton.remove();
-      if (insertLinkButton) insertLinkButton.remove();
-      if (insertImageButton) insertImageButton.remove();
 
       // Restore edit and delete buttons
       const editButton = createButtons("Edit", "edit-button", () =>
@@ -252,92 +213,29 @@ function recognitionItems(item) {
   return newElement;
 }
 
-// function createTextElement(parentElement, textContent) {
-//   const text = document.createElement("span");
-//   text.appendChild(document.createTextNode(textContent));
-//   parentElement.appendChild(text);
-//   console.log("replacing editing blank with span...", textContent);
-// }
-
-// function createLinkElement(parentElement, linkData) {
-//   const link = document.createElement("a");
-//   const linkRegex = /\(linkUrl:([^)]+)\)/;
-//   const linkUrl = linkData.match(linkRegex)[1];
-//   link.href = linkUrl;
-//   link.target = "_blank"; // Open in a new tab
-//   link.textContent = linkUrl;
-//   parentElement.appendChild(link);
-//   console.log("replacing editing blank with link...", linkUrl);
-// }
-
-// function createImageElement(parentElement, imageData) {
-//   const imageRegex = /\(imgUrl:([^)]+)\)/;
-//   const imageUrl = imageData.match(imageRegex)[1];
-
-//   console.log("replacing editing blank with img...", imageUrl);
-//   // Create a span element
-//   const image = document.createElement("img");
-//   image.src = imageUrl;
-
-//   parentElement.appendChild(image);
-
-//   // Create "Open" button
-//   const openButton = createButtons("Открыть", "open-button", function () {
-//     window.open(imageUrl, "_blank");
-//   });
-//   parentElement.appendChild(openButton);
-// }
-
 function createTextWithImageElement(parent, text) {
   console.log("replacing editing blank with custom...", text);
   let remainingText = text;
 
   while (remainingText) {
-    const imgMatch = remainingText.match(/\(imgUrl:([^)]+)\)/);
-    const linkMatch = remainingText.match(/\(linkUrl:([^)]+)\)/);
+    const urlMatch = remainingText.match(/https:\/\/[^ ]+/);
 
-    if (imgMatch && (!linkMatch || imgMatch.index < linkMatch.index)) {
-      // (imgUrl:...) found
-      const textBefore = remainingText.substring(0, imgMatch.index);
+    if (urlMatch) {
+      const textBefore = remainingText.substring(0, urlMatch.index);
       if (textBefore) {
         const textElement = document.createElement("span");
         textElement.appendChild(document.createTextNode(textBefore));
         parent.appendChild(textElement);
       }
 
-      const imgElement = document.createElement("img");
-      imgElement.src = imgMatch[1];
-      imgElement.addEventListener("click", function () {
-        // Действие при клике на изображение
-        // Например, открывать изображение в новой вкладке
-        window.open(imgMatch[1], "_blank");
-      });
-      imgElement.style.cursor = "pointer";
-      parent.appendChild(imgElement);
+      const element = urlMatch[0].match(/\.(png|jpeg|jpg|webp)$/i)
+        ? createImageElement(urlMatch[0])
+        : createLinkElement(urlMatch[0]);
 
-      remainingText = remainingText.substring(
-        imgMatch.index + imgMatch[0].length
-      );
-    } else if (linkMatch && (!imgMatch || linkMatch.index < imgMatch.index)) {
-      // (linkUrl:...) found
-      const textBefore = remainingText.substring(0, linkMatch.index);
-      if (textBefore) {
-        const textElement = document.createElement("span");
-        textElement.appendChild(document.createTextNode(textBefore));
-        parent.appendChild(textElement);
-      }
+      parent.appendChild(element);
 
-      const linkElement = document.createElement("a");
-      linkElement.href = linkMatch[1];
-      linkElement.target = "_blank"; // Open in a new tab
-      linkElement.textContent = linkMatch[1];
-      parent.appendChild(linkElement);
-
-      remainingText = remainingText.substring(
-        linkMatch.index + linkMatch[0].length
-      );
+      remainingText = remainingText.substring(urlMatch.index + urlMatch[0].length);
     } else {
-      // No (imgUrl:...) or (url:...) found
       const textElement = document.createElement("span");
       textElement.appendChild(document.createTextNode(remainingText));
       parent.appendChild(textElement);
@@ -345,6 +243,27 @@ function createTextWithImageElement(parent, text) {
     }
   }
 }
+
+function createImageElement(imageUrl) {
+  console.log("replacing editing blank with img...", imageUrl);
+  const imgElement = document.createElement("img");
+  imgElement.src = imageUrl;
+  imgElement.addEventListener("click", function () {
+    window.open(imageUrl, "_blank");
+  });
+  imgElement.style.cursor = "pointer";
+  return imgElement;
+}
+
+function createLinkElement(linkUrl) {
+  console.log("replacing editing blank with link...", linkUrl);
+  const linkElement = document.createElement("a");
+  linkElement.href = linkUrl;
+  linkElement.target = "_blank";
+  linkElement.textContent = linkUrl;
+  return linkElement;
+}
+
 
 function createEmptyElement(parentElement) {
   createAnimatedElement("Invalid item type");
@@ -483,35 +402,6 @@ function createNewItemWithInput() {
   });
   div.appendChild(cancelButton);
 
-  const insertImageButton = createButtons(
-    "Вставить изображение",
-    "insert-image-button",
-    function () {
-      // Вставка фрагмента с флажком изображения в текстовое поле
-      const cursorPos = textArea.selectionStart;
-      const textBeforeCursor = textArea.value.substring(0, cursorPos);
-      const textAfterCursor = textArea.value.substring(cursorPos);
-      const imageFragment = "(imgUrl:)";
-      const newText = textBeforeCursor + imageFragment + textAfterCursor;
-      textArea.value = newText;
-    }
-  );
-  const insertLinkButton = createButtons(
-    "Вставить ссылку",
-    "insert-link-button",
-    function () {
-      // Вставка фрагмента с флажком ссылки в текстовое поле
-      const cursorPos = textArea.selectionStart;
-      const textBeforeCursor = textArea.value.substring(0, cursorPos);
-      const textAfterCursor = textArea.value.substring(cursorPos);
-      const linkFragment = "(linkUrl:)";
-      const newText = textBeforeCursor + linkFragment + textAfterCursor;
-      textArea.value = newText;
-    }
-  );
-  div.appendChild(insertLinkButton);
-  div.appendChild(insertImageButton);
-
   // Add the new item to the interface
   listOfItems.insertBefore(div, listOfItems.firstChild);
 
@@ -542,20 +432,7 @@ function createAnimatedElement(text, bgColor) {
   const element = document.createElement("div");
   element.className = "animated-element";
   element.style.background = bgColor || "#db3232";
-  element.style.display = "flex";
-  element.style.alignItems = "center";
-  element.style.justifyContent = "center";
-  element.style.position = "fixed";
-  element.style.bottom = "50px";
-  element.style.minWidth = "100px";
-  element.style.height = "40px";
-  element.style.left = "";
-  element.style.borderRadius = "8px";
-  element.style.overflow = "hidden";
-  element.style.color = "white"; // Цвет текста черный
-  element.style.transform = "translateX(-50%) translateY(100%)"; // Устанавливаем начальное положение внизу
-  element.style.transition = "transform 0.3s ease-in-out";
-  element.style.padding = "0 5px 0 5px";
+  element.style.bottom = "45px";
 
   const span = document.createElement("span");
   span.textContent = text || "UwU";
@@ -616,7 +493,7 @@ function clearItemList() {
   chrome.storage.local.remove("yourItemList");
 }
 
-rephreshButton.addEventListener("click", function () {
+refreshButton.addEventListener("click", function () {
   chrome.storage.local.get("yourItemList", function (data) {
     const storedItemList = data.yourItemList || [];
     displayItems(storedItemList);

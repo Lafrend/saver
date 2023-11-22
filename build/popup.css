@@ -24,7 +24,7 @@ body {
 }
 #clearAllButton,
 #createItemButton,
-#rephreshButton,
+#refreshButton,
 #sendMessage {
   width: 30px;
   height: 30px;
@@ -73,6 +73,49 @@ div .info-item {
   white-space: pre-wrap; /* Разрешить перенос строк и сохранение пробелов */
   word-wrap: break-word; /* Разрывать длинные слова */
   transition: opacity 0.5s ease, transform 0.5s ease; /* Добавляем анимацию для свойств opacity и transform */
+}
+
+textarea {
+  border: none;
+  resize: none;
+  background-color: transparent;
+  overflow: hidden;
+  width: 100%;
+}
+
+textarea:focus {
+  outline: none;
+}
+
+.background-div {
+  background-color: #0000004d;
+  z-index: 9998;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+}
+
+.loading-div {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100px;
+  height: 50px;
+  z-index: 9999;
+  background-color: green;
+}
+
+.animated-element {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  min-width: 100px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  color: white;
+  padding: 0 5px 0 5px;
 }
 
 /*# sourceMappingURL=popup.css.map*/

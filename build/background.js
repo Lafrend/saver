@@ -88,9 +88,9 @@ function saveItem(info) {
   if (selectedText) {
     itemData = selectedText;
   } else if (imageUrl) {
-    itemData = `(imgUrl:${imageUrl})`;
+    itemData = imageUrl;
   } else if (linkUrl) {
-    itemData = `(linkUrl:${linkUrl})`;
+    itemData = linkUrl;
   }
   // Add the new item to your list (modify this according to your list structure)
   const newItem = {
