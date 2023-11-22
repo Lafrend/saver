@@ -1,0 +1,81 @@
+body {
+  margin: 0;
+  min-width: 430px;
+  min-height: 300px;
+  padding: 0;
+  display: flex;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  align-items: center;
+  justify-content: center;
+  background-color: #fbfbfb;
+}
+
+.footer {
+  z-index: 9997;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  height: 40px; /* Задаем высоту футера */
+  background-color: #fbfbfb;
+  justify-content: center;
+  flex-direction: row;
+}
+#clearAllButton,
+#createItemButton,
+#rephreshButton,
+#sendMessage {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin: 5px;
+  background-color: #e1e1e1;
+}
+
+#list {
+  margin-bottom: 40px;
+}
+
+#listOfItems {
+  list-style-type: none;
+  padding: 0;
+}
+
+div .info-item {
+  width: 400px;
+  min-height: 50px;
+  margin: 5px;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #e1e1e1;
+}
+
+.info-item img {
+  border-radius: 10px;
+  max-width: 100%; /* Максимальная ширина изображения равна ширине родительского блока */
+  max-height: 100%; /* Максимальная высота изображения равна высоте родительского блока */
+  display: block; /* Это чтобы избежать нежелательного пробела под изображением */
+  margin: auto; /* Центрирование изображения */
+}
+
+.slide-out {
+  transform: translateX(-100%); /* Сдвигаем элемент влево на 100% ширины */
+  opacity: 0; /* Прозрачность 0 для плавного исчезновения */
+}
+
+.info-item {
+  white-space: pre-wrap; /* Разрешить перенос строк и сохранение пробелов */
+  word-wrap: break-word; /* Разрывать длинные слова */
+  transition: opacity 0.5s ease, transform 0.5s ease; /* Добавляем анимацию для свойств opacity и transform */
+}
+
+/*# sourceMappingURL=popup.css.map*/
+
+
+/*# sourceMappingURL=popup.css.map*/
