@@ -101,6 +101,11 @@ const createItemButton = document.getElementById("createItemButton");
 const refreshButton = document.getElementById("refreshButton");
 const sendMessage = document.getElementById("sendMessage");
 
+const pinItemsDiv = document.createElement("div");
+const notPinItemsDiv = document.createElement("div");
+pinItemsDiv.className = "pin-items-div";
+notPinItemsDiv.className = "not-pin-items-div";
+
 const loadingDiv = document.createElement("div");
 const loadingSpan = document.createElement("span");
 const backgroundDiv = document.createElement("div");
@@ -127,7 +132,8 @@ window.addEventListener("load", (event) => {
 
 function displayItems(itemListData) {
   console.log("displaying loaded items");
-  listOfItems.innerHTML = "";
+  pinItemsDiv.innerHTML = "";
+  notPinItemsDiv.innerHTML = "";
   itemListData.forEach(function (item) {
     addNewItem(item);
   });
@@ -135,8 +141,10 @@ function displayItems(itemListData) {
 
 function addNewItem(item) {
   console.log("prepare to adding item to interface...", item);
-  const div = document.createElement("div");
-  div.className = "info-item";
+  const notPinnedItem = document.createElement("div");
+  const pinnedItem = document.createElement("div");
+  notPinnedItem.className = "item";
+  pinnedItem.className = "pin item";
 
   let itemContent = recognitionItems(item);
 
@@ -146,14 +154,20 @@ function addNewItem(item) {
   const deleteButton = createButtons("Delete", "delete-button", () =>
     deleteItem(item.createdAt)
   );
+  const pinButton = createButtons("Pin", "pin-button", () => pinItem(item));
 
   // Set data-createdAt attribute to the createdAt value
-  div.dataset.createdAt = item.createdAt;
+  pinnedItem.dataset.createdAt = item.createdAt;
+  notPinnedItem.dataset.createdAt = item.createdAt;
 
-  div.appendChild(itemContent);
-  div.appendChild(editButton);
-  div.appendChild(deleteButton);
-  listOfItems.insertBefore(div, listOfItems.firstChild);
+  const targetDiv = item.pinned === "true" ? pinItemsDiv : notPinItemsDiv;
+  const targetItem = item.pinned === "true" ? pinnedItem : notPinnedItem;
+  
+  targetItem.append(itemContent, editButton, deleteButton, pinButton);
+
+  targetDiv.insertBefore(targetItem, targetDiv.firstChild);
+
+  listOfItems.append(pinItemsDiv, notPinItemsDiv);
 }
 
 // Function to create a button with a specific label and click handler
@@ -220,8 +234,10 @@ function editItem(item, content) {
   const div = content.parentElement;
   const editButton = div.querySelector(".edit-button");
   const deleteButton = div.querySelector(".delete-button");
-  if (editButton) editButton.remove();
-  if (deleteButton) deleteButton.remove();
+  const pinButton = div.querySelector(".pin-button");
+  editButton?.remove();
+  deleteButton?.remove();
+  pinButton?.remove();
 
   content.replaceWith(textarea);
 
@@ -232,6 +248,16 @@ function editItem(item, content) {
   textarea.focus();
 
   console.log("editing item....", item);
+}
+
+function pinItem(item) {
+  item.pinned = String(!(item.pinned === "true"));
+
+  updateLocalStorage(item);
+  chrome.storage.local.get("yourItemList", function (data) {
+    const storedItemList = data.yourItemList || [];
+    displayItems(storedItemList);
+  });
 }
 
 function createTextArea(content) {
@@ -251,7 +277,6 @@ function createTextArea(content) {
 
   return textarea;
 }
-
 
 function confirmEdit(item, content, textarea) {
   console.log("prepare to confirm editing item:", item);
@@ -275,8 +300,8 @@ function confirmEdit(item, content, textarea) {
       // Remove confirm and cancel buttons
       const confirmButton = div.querySelector(".confirm-button");
       const cancelButton = div.querySelector(".cancel-button");
-      if (confirmButton) confirmButton.remove();
-      if (cancelButton) cancelButton.remove();
+      confirmButton?.remove();
+      cancelButton?.remove();
 
       // Restore edit and delete buttons
       const editButton = createButtons("Edit", "edit-button", () =>
@@ -285,8 +310,10 @@ function confirmEdit(item, content, textarea) {
       const deleteButton = createButtons("Delete", "delete-button", () =>
         deleteItem(item.createdAt)
       );
+      const pinButton = createButtons("Pin", "pin-button", () => pinItem(item));
       div.appendChild(editButton);
       div.appendChild(deleteButton);
+      div.appendChild(pinButton);
     }
   }
 }
@@ -325,7 +352,9 @@ function createTextWithImageElement(parent, text) {
 
       parent.appendChild(element);
 
-      remainingText = remainingText.substring(urlMatch.index + urlMatch[0].length);
+      remainingText = remainingText.substring(
+        urlMatch.index + urlMatch[0].length
+      );
     } else {
       const textElement = document.createElement("span");
       textElement.appendChild(document.createTextNode(remainingText));
@@ -355,7 +384,6 @@ function createLinkElement(linkUrl) {
   return linkElement;
 }
 
-
 function createEmptyElement(parentElement) {
   createAnimatedElement("Invalid item type");
   console.error("Invalid item type");
@@ -379,8 +407,8 @@ function cancelEdit(item, content, textarea) {
       // Remove confirm and cancel buttons
       const confirmButton = div.querySelector(".confirm-button");
       const cancelButton = div.querySelector(".cancel-button");
-      if (confirmButton) confirmButton.remove();
-      if (cancelButton) cancelButton.remove();
+      confirmButton?.remove();
+      cancelButton?.remove();
 
       // Restore edit and delete buttons
       const editButton = createButtons("Edit", "edit-button", () =>
@@ -389,8 +417,10 @@ function cancelEdit(item, content, textarea) {
       const deleteButton = createButtons("Delete", "delete-button", () =>
         deleteItem(item.createdAt)
       );
+      const pinButton = createButtons("Pin", "pin-button", () => pinItem(item));
       div.appendChild(editButton);
       div.appendChild(deleteButton);
+      div.appendChild(pinButton);
     } else {
       createAnimatedElement("something went wrong during canceling editing");
       console.error("something went wrong during canceling editing", item);
@@ -411,6 +441,7 @@ function updateLocalStorage(item) {
     if (index !== -1) {
       // Update the item's content
       storedList[index].itemData = item.itemData;
+      storedList[index].pinned = item.pinned;
       console.log(
         "item in stored storage replaced with new item content",
         item
@@ -445,7 +476,7 @@ function createNewItemWithInput() {
   const textArea = createTextArea("");
 
   const div = document.createElement("div");
-  div.className = "info-item";
+  div.className = "item";
 
   textArea.placeholder = "Введите текст...";
   div.appendChild(textArea);
@@ -456,7 +487,6 @@ function createNewItemWithInput() {
     if (text !== "") {
       // Обработка текста и фрагментов изображений
       const newItem = {
-        itemType: "custom",
         itemData: text,
         createdAt: new Date().getTime(),
       };

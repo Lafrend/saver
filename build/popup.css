@@ -26,16 +26,16 @@ body {
 #createItemButton,
 #refreshButton,
 #sendMessage {
-  width: 30px;
   height: 30px;
   border: 0;
-  border-radius: 30%;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  margin: 5px;
+  margin: 5px 2px 5px 2px;
   background-color: #e1e1e1;
+  padding: 0 10px 0 10px;
+  align-items: center;
 }
 
 #list {
@@ -47,7 +47,7 @@ body {
   padding: 0;
 }
 
-div .info-item {
+div .item {
   width: 400px;
   min-height: 50px;
   margin: 5px;
@@ -56,7 +56,19 @@ div .info-item {
   background-color: #e1e1e1;
 }
 
-.info-item img {
+button {
+  cursor: pointer;
+}
+
+.item button {
+  border-radius: 20px;
+  margin: 5px 2px 0 2px;
+  padding: 0 10px 0 10px;
+  border: none;
+  height: 30px;
+}
+
+.item img {
   border-radius: 10px;
   max-width: 100%; /* Максимальная ширина изображения равна ширине родительского блока */
   max-height: 100%; /* Максимальная высота изображения равна высоте родительского блока */
@@ -69,7 +81,7 @@ div .info-item {
   opacity: 0; /* Прозрачность 0 для плавного исчезновения */
 }
 
-.info-item {
+.item {
   white-space: pre-wrap; /* Разрешить перенос строк и сохранение пробелов */
   word-wrap: break-word; /* Разрывать длинные слова */
   transition: opacity 0.5s ease, transform 0.5s ease; /* Добавляем анимацию для свойств opacity и transform */

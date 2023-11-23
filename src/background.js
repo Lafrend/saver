@@ -87,8 +87,9 @@ function saveItem(info) {
   }
   // Add the new item to your list (modify this according to your list structure)
   const newItem = {
-    itemData: itemData,
     createdAt: "",
+    itemData: itemData,
+    pinned: "",
   };
 
   // Save the new item to local storage or wherever you store your list
