@@ -31,6 +31,7 @@ chrome.storage.local.get("yourItemList", function (data) {
   console.log("loading stoared items");
   const storedItemList = data.yourItemList || [];
   displayItems(storedItemList);
+  console.log("This code runs after loading stored items.");
 });
 
 window.addEventListener("load", (event) => {
@@ -63,7 +64,11 @@ function addNewItem(item) {
   const deleteButton = createButtons("Delete", "delete-button", () =>
     deleteItem(item.createdAt)
   );
-  const pinButton = createButtons("Pin", "pin-button", () => pinItem(item));
+
+  const pinButton =
+    item.pinned === "true"
+      ? createButtons("Unpin", "unpin-button", () => pinItem(item))
+      : createButtons("Pin", "pin-button", () => pinItem(item));
 
   // Set data-createdAt attribute to the createdAt value
   pinnedItem.dataset.createdAt = item.createdAt;
@@ -71,7 +76,7 @@ function addNewItem(item) {
 
   const targetDiv = item.pinned === "true" ? pinItemsDiv : notPinItemsDiv;
   const targetItem = item.pinned === "true" ? pinnedItem : notPinnedItem;
-  
+
   targetItem.append(itemContent, editButton, deleteButton, pinButton);
 
   targetDiv.insertBefore(targetItem, targetDiv.firstChild);
@@ -143,7 +148,10 @@ function editItem(item, content) {
   const div = content.parentElement;
   const editButton = div.querySelector(".edit-button");
   const deleteButton = div.querySelector(".delete-button");
-  const pinButton = div.querySelector(".pin-button");
+  const pinButton =
+    item.pinned == "true"
+      ? div.querySelector(".unpin-button")
+      : div.querySelector(".pin-button");
   editButton?.remove();
   deleteButton?.remove();
   pinButton?.remove();
@@ -163,10 +171,6 @@ function pinItem(item) {
   item.pinned = String(!(item.pinned === "true"));
 
   updateLocalStorage(item);
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
-    displayItems(storedItemList);
-  });
 }
 
 function createTextArea(content) {
@@ -219,7 +223,10 @@ function confirmEdit(item, content, textarea) {
       const deleteButton = createButtons("Delete", "delete-button", () =>
         deleteItem(item.createdAt)
       );
-      const pinButton = createButtons("Pin", "pin-button", () => pinItem(item));
+      const pinButton =
+        item.pinned === "true"
+          ? createButtons("Unpin", "unpin-button", () => pinItem(item))
+          : createButtons("Pin", "pin-button", () => pinItem(item));
       div.appendChild(editButton);
       div.appendChild(deleteButton);
       div.appendChild(pinButton);
@@ -245,7 +252,7 @@ function createTextWithImageElement(parent, text) {
   let remainingText = text;
 
   while (remainingText) {
-    const urlMatch = remainingText.match(/https:\/\/[^ ]+/);
+    const urlMatch = remainingText.match(/https?:\/\/[^ ]+/i);
 
     if (urlMatch) {
       const textBefore = remainingText.substring(0, urlMatch.index);
@@ -274,7 +281,6 @@ function createTextWithImageElement(parent, text) {
 }
 
 function createImageElement(imageUrl) {
-  console.log("replacing editing blank with img...", imageUrl);
   const imgElement = document.createElement("img");
   imgElement.src = imageUrl;
   imgElement.addEventListener("click", function () {
@@ -285,7 +291,6 @@ function createImageElement(imageUrl) {
 }
 
 function createLinkElement(linkUrl) {
-  console.log("replacing editing blank with link...", linkUrl);
   const linkElement = document.createElement("a");
   linkElement.href = linkUrl;
   linkElement.target = "_blank";
@@ -326,7 +331,10 @@ function cancelEdit(item, content, textarea) {
       const deleteButton = createButtons("Delete", "delete-button", () =>
         deleteItem(item.createdAt)
       );
-      const pinButton = createButtons("Pin", "pin-button", () => pinItem(item));
+      const pinButton =
+        item.pinned === "true"
+          ? createButtons("Unpin", "unpin-button", () => pinItem(item))
+          : createButtons("Pin", "pin-button", () => pinItem(item));
       div.appendChild(editButton);
       div.appendChild(deleteButton);
       div.appendChild(pinButton);
@@ -369,6 +377,7 @@ function updateLocalStorage(item) {
       );
       console.error("something went wrong during updating local storage");
     }
+    displayItems(storedList);
   });
 }
 
@@ -431,6 +440,13 @@ function createNewItemWithInput() {
     div.remove();
   });
   div.appendChild(cancelButton);
+
+  textArea.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      // Нажата клавиша Enter, вызываем click на кнопке
+      confirmButton.click();
+    }
+  });
 
   // Add the new item to the interface
   listOfItems.insertBefore(div, listOfItems.firstChild);
@@ -519,8 +535,17 @@ sendMessage.addEventListener("click", () =>
 );
 
 function clearItemList() {
-  listOfItems.innerHTML = "";
+  console.log("prepare to delete all items");
+  pinItemsDiv.innerHTML = "";
+  notPinItemsDiv.innerHTML = "";
+  console.log("items deleted from interface");
   chrome.storage.local.remove("yourItemList");
+  console.log("items deleted from local storage");
+
+  chrome.storage.local.get("yourItemList", function (data) {
+    const storedItemList = data.yourItemList || [];
+    displayItems(storedItemList);
+  });
 }
 
 refreshButton.addEventListener("click", function () {

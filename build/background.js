@@ -23,32 +23,14 @@ function loadItems() {
 chrome.runtime.onInstalled.addListener(function () {
   // Add a context menu item for selected text
   chrome.contextMenus.create({
-    title: "Сохранить текст",
-    id: "save-selected-text",
-    contexts: ["selection"],
-  });
-
-  // Add a context menu item for images
-  chrome.contextMenus.create({
-    title: "Сохранить изображение",
-    id: "save-image",
-    contexts: ["image"],
-  });
-
-  // Add a context menu item for clickable links
-  chrome.contextMenus.create({
-    title: "Сохранить ссылку",
-    id: "save-link",
-    contexts: ["link"],
+    title: "Сохранить",
+    id: "save",
+    contexts: ["selection", "image", "video", "link"],
   });
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
-  if (info.menuItemId == "save-selected-text") {
-    saveItem(info);
-  } else if (info.menuItemId == "save-image") {
-    saveItem(info);
-  } else if (info.menuItemId == "save-link") {
+  if (info.menuItemId == "save") {
     saveItem(info);
   }
 });
@@ -79,19 +61,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 function saveItem(info) {
-  const selectedText = info.selectionText || "";
-  const imageUrl = info.srcUrl || "";
-  const linkUrl = info.linkUrl || "";
+  const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl ||"";
 
   let itemData;
-
-  if (selectedText) {
-    itemData = selectedText;
-  } else if (imageUrl) {
-    itemData = imageUrl;
-  } else if (linkUrl) {
-    itemData = linkUrl;
-  }
+  itemData = selected;
   // Add the new item to your list (modify this according to your list structure)
   const newItem = {
     createdAt: "",
