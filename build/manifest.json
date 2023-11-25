@@ -31,7 +31,8 @@
     "alarms",
     "activeTab",
     "webNavigation",
-    "downloads"
+    "downloads",
+    "unlimitedStorage"
   ],
   "content_scripts": [
     {

@@ -9,6 +9,7 @@ const clearAllButton = document.getElementById("clearAllButton");
 const createItemButton = document.getElementById("createItemButton");
 const refreshButton = document.getElementById("refreshButton");
 const sendMessage = document.getElementById("sendMessage");
+const infoButton = document.getElementById("infoButton");
 
 const pinItemsDiv = document.createElement("div");
 const notPinItemsDiv = document.createElement("div");
@@ -17,29 +18,65 @@ notPinItemsDiv.className = "not-pin-items-div";
 
 const loadingDiv = document.createElement("div");
 const loadingSpan = document.createElement("span");
-const backgroundDiv = document.createElement("div");
-backgroundDiv.className = "background-div";
 loadingDiv.className = "loading-div";
 loadingSpan.textContent = "Loading...";
 loadingDiv.appendChild(loadingSpan);
 console.log("show loading items");
 document.body.appendChild(loadingDiv);
-document.body.appendChild(backgroundDiv);
 
 // Load stored data on extension open
-chrome.storage.local.get("yourItemList", function (data) {
-  console.log("loading stoared items");
-  const storedItemList = data.yourItemList || [];
-  displayItems(storedItemList);
-  console.log("This code runs after loading stored items.");
-});
+loadInterface();
 
+function loadInterface() {
+  chrome.storage.local.get("yourItemList", function (data) {
+    const storedItemList = data.yourItemList || [];
+    displayItems(storedItemList);
+    console.log("Loaded items:", storedItemList);
+  });
+}
+function getLocalSize() {
+  return new Promise((resolve) => {
+    chrome.storage.local.getBytesInUse("yourItemList", function (bytesInUse) {
+      const size = getCorrectSize(bytesInUse);
+      resolve(size);
+    });
+  });
+}
+function getNumberOfItems() {
+  return new Promise((resolve) => {
+    // Получение данных из локального хранилища
+    chrome.storage.local.get("yourItemList", function (result) {
+      let numberOfItems;
+      // Проверка наличия ключа в хранилище
+      if ("yourItemList" in result) {
+        const itemList = result.yourItemList;
+        numberOfItems = itemList.length; // Получение количества элементов
+      } else {
+        numberOfItems = 0;
+      }
+      resolve(numberOfItems);
+    });
+  });
+}
+function getCorrectSize(bytes) {
+  let sizeString, sizeValue;
+  if (bytes < 1024) {
+    sizeString = "B";
+    sizeValue = bytes;
+  } else if (bytes < 1024 * 1024) {
+    sizeString = "KB";
+    sizeValue = bytes / 1024;
+  } else {
+    sizeString = "MB";
+    sizeValue = bytes / (1024 * 1024);
+  }
+  const size = sizeValue.toFixed(2) + sizeString;
+  return size;
+}
 window.addEventListener("load", (event) => {
   console.log("removing loading items");
   loadingDiv.remove();
-  backgroundDiv.remove();
 });
-
 function displayItems(itemListData) {
   console.log("displaying loaded items");
   pinItemsDiv.innerHTML = "";
@@ -48,43 +85,55 @@ function displayItems(itemListData) {
     addNewItem(item);
   });
 }
-
 function addNewItem(item) {
-  console.log("prepare to adding item to interface...", item);
   const notPinnedItem = document.createElement("div");
   const pinnedItem = document.createElement("div");
   notPinnedItem.className = "item";
   pinnedItem.className = "pin item";
 
-  let itemContent = recognitionItems(item);
+  let itemContent;
 
-  const editButton = createButtons("Edit", "edit-button", () =>
-    editItem(item, itemContent)
-  );
+  item.hide
+    ? item.hide === false || ""
+      ? (itemContent = recognitionItems(item))
+      : (itemContent = "")
+    : (itemContent = recognitionItems(item));
+
+  const editButton = createButtons("Edit", "edit-button", () => editItem(item));
   const deleteButton = createButtons("Delete", "delete-button", () =>
     deleteItem(item.createdAt)
   );
 
-  const pinButton =
-    item.pinned === "true"
-      ? createButtons("Unpin", "unpin-button", () => pinItem(item))
-      : createButtons("Pin", "pin-button", () => pinItem(item));
+  const pinButton = createButtons(
+    item.pinned ? "Unpin" : "Pin",
+    "pin-unpin-button",
+    () => pinItem(item)
+  );
+  const hideButton = createButtons(
+    item.hide ? "Show" : "Hide",
+    "hide-n-show-button",
+    () => hideNshowItem(item)
+  );
 
   // Set data-createdAt attribute to the createdAt value
   pinnedItem.dataset.createdAt = item.createdAt;
   notPinnedItem.dataset.createdAt = item.createdAt;
 
-  const targetDiv = item.pinned === "true" ? pinItemsDiv : notPinItemsDiv;
-  const targetItem = item.pinned === "true" ? pinnedItem : notPinnedItem;
+  const targetDiv = item.pinned === true ? pinItemsDiv : notPinItemsDiv;
+  const targetItem = item.pinned === true ? pinnedItem : notPinnedItem;
 
-  targetItem.append(itemContent, editButton, deleteButton, pinButton);
+  targetItem.append(
+    itemContent,
+    editButton,
+    deleteButton,
+    pinButton,
+    hideButton
+  );
 
   targetDiv.insertBefore(targetItem, targetDiv.firstChild);
 
   listOfItems.append(pinItemsDiv, notPinItemsDiv);
 }
-
-// Function to create a button with a specific label and click handler
 function createButtons(label, className, clickHandler) {
   const button = document.createElement("button");
   button.className = className;
@@ -93,86 +142,84 @@ function createButtons(label, className, clickHandler) {
   button.addEventListener("click", clickHandler);
   return button;
 }
-
 function deleteItem(createdAt) {
-  console.log("prepare to delete item with createdAt:", createdAt);
+  console.log("Preparing to delete item with createdAt:", createdAt);
+  // Вызываем обе функции
+  removeItemFromUI(createdAt);
+  removeItemFromLocalStorage(createdAt);
+}
+function removeItemFromUI(createdAt) {
+  const itemToRemove = document.querySelector(
+    `[data-created-at="${createdAt}"]`
+  );
+
+  if (itemToRemove) {
+    itemToRemove.remove();
+    createAnimatedElement("Item deleted from UI successfully", "#71e997");
+  } else {
+    createAnimatedElement("Something went wrong during deleting item from UI");
+    console.error(
+      "Something went wrong during deleting item from UI with createdAt:",
+      createdAt
+    );
+  }
+}
+function removeItemFromLocalStorage(createdAt) {
   chrome.storage.local.get("yourItemList", function (data) {
     const storedList = data.yourItemList || [];
-
     const indexToRemove = storedList.findIndex(
       (item) => item.createdAt === createdAt
     );
 
     if (indexToRemove !== -1) {
-      const itemToRemove = document.querySelector(
-        `[data-created-at="${createdAt}"]`
-      );
+      storedList.splice(indexToRemove, 1);
 
-      if (itemToRemove) {
-        // Добавляем класс с анимацией перед удалением
-        itemToRemove.classList.add("slide-out");
-
-        // Ждем завершения анимации, затем удаляем из интерфейса и обновляем хранилище
-        setTimeout(() => {
-          itemToRemove.remove();
-
-          storedList.splice(indexToRemove, 1);
-          chrome.storage.local.set({ yourItemList: storedList }, function () {
-            createAnimatedElement("Item deleted successfully");
-            console.log("Item deleted successfully with createdAt:", createdAt);
-          });
-        }, 500); // 500 миллисекунд – время анимации
-      } else {
-        createAnimatedElement("something went wrong during deleting item");
-        console.error(
-          "something went wrong during deleting item with createdAt:",
-          createdAt
+      chrome.storage.local.set({ yourItemList: storedList }, function () {
+        createAnimatedElement(
+          "Item deleted from local storage successfully",
+          "#71e997"
         );
-      }
+      });
+    } else {
+      createAnimatedElement("Item not found in local storage");
+      console.error(
+        "Item not found in local storage with createdAt:",
+        createdAt
+      );
     }
   });
 }
-
-// Function to handle item editing
-function editItem(item, content) {
-  console.log("prepare to edit item:", item);
+function editItem(item) {
   const textarea = createTextArea(item.itemData);
   const confirmButton = createButtons("Confirm", "confirm-button", () =>
-    confirmEdit(item, content, textarea)
+    confirmEdit(item, textarea)
   );
   const cancelButton = createButtons("Cancel", "cancel-button", () =>
-    cancelEdit(item, content, textarea)
+    cancelEdit(item)
+  );
+  const content = document.querySelector(
+    `[data-created-at="${item.createdAt}"]`
   );
 
-  // Remove the existing buttons
-  const div = content.parentElement;
-  const editButton = div.querySelector(".edit-button");
-  const deleteButton = div.querySelector(".delete-button");
-  const pinButton =
-    item.pinned == "true"
-      ? div.querySelector(".unpin-button")
-      : div.querySelector(".pin-button");
-  editButton?.remove();
-  deleteButton?.remove();
-  pinButton?.remove();
-
-  content.replaceWith(textarea);
-
-  // Append buttons to the list item
-  div.appendChild(confirmButton);
-  div.appendChild(cancelButton);
+  content.innerHTML = "";
+  content.append(textarea, confirmButton, cancelButton);
 
   textarea.focus();
-
-  console.log("editing item....", item);
 }
-
 function pinItem(item) {
-  item.pinned = String(!(item.pinned === "true"));
-
-  updateLocalStorage(item);
+  item.pinned = !item.pinned;
+  updateItemInLocalStorage(item);
 }
-
+function hideNshowItem(item) {
+  item.hide = !item.hide;
+  const itemToHide = document.querySelector(
+    `[data-created-at="${item.createdAt}"]`
+  );
+  item.hide === true
+    ? (itemToHide.removeChild(itemToHide.firstChild),
+      updateItemInLocalStorage(item))
+    : updateItemInLocalStorage(item);
+}
 function createTextArea(content) {
   const textarea = document.createElement("textarea");
   textarea.value = content;
@@ -190,50 +237,12 @@ function createTextArea(content) {
 
   return textarea;
 }
-
-function confirmEdit(item, content, textarea) {
-  console.log("prepare to confirm editing item:", item);
+function confirmEdit(item, textarea) {
   item.itemData = textarea.value;
 
   // Update content in local storage
-  updateLocalStorage(item);
-
-  let newElement = recognitionItems(item);
-
-  // Replace the textarea with the new element
-  const div = textarea.parentElement;
-
-  if (div) {
-    const index = Array.from(div.parentElement.children).indexOf(div);
-
-    if (index !== -1) {
-      div.replaceChild(newElement, textarea);
-      console.log("editing blank replaced with new element");
-
-      // Remove confirm and cancel buttons
-      const confirmButton = div.querySelector(".confirm-button");
-      const cancelButton = div.querySelector(".cancel-button");
-      confirmButton?.remove();
-      cancelButton?.remove();
-
-      // Restore edit and delete buttons
-      const editButton = createButtons("Edit", "edit-button", () =>
-        editItem(item, newElement)
-      );
-      const deleteButton = createButtons("Delete", "delete-button", () =>
-        deleteItem(item.createdAt)
-      );
-      const pinButton =
-        item.pinned === "true"
-          ? createButtons("Unpin", "unpin-button", () => pinItem(item))
-          : createButtons("Pin", "pin-button", () => pinItem(item));
-      div.appendChild(editButton);
-      div.appendChild(deleteButton);
-      div.appendChild(pinButton);
-    }
-  }
+  updateItemInLocalStorage(item);
 }
-
 function recognitionItems(item) {
   // Create a new element based on the item type
   let newElement = document.createElement("div");
@@ -246,9 +255,7 @@ function recognitionItems(item) {
 
   return newElement;
 }
-
 function createTextWithImageElement(parent, text) {
-  console.log("replacing editing blank with custom...", text);
   let remainingText = text;
 
   while (remainingText) {
@@ -279,17 +286,62 @@ function createTextWithImageElement(parent, text) {
     }
   }
 }
-
 function createImageElement(imageUrl) {
   const imgElement = document.createElement("img");
   imgElement.src = imageUrl;
+  // // Получение изображения по URL в виде Blob
+  // async function getImageBlob(url) {
+  //   const response = await fetch(url);
+  //   const blob = await response.blob();
+  //   return blob;
+  // }
+  // // Преобразование Blob в строку base64
+  // function blobToBase64(blob) {
+  //   return new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.onloadend = function () {
+  //       resolve(reader.result.split(",")[1]);
+  //     };
+  //     reader.onerror = reject;
+  //     reader.readAsDataURL(blob);
+  //   });
+  // }
+  // // Получение Blob изображения по URL
+  // getImageBlob(imageUrl)
+  //   .then((blob) => {
+  //     // Преобразование Blob в строку base64
+  //     return blobToBase64(blob);
+  //   })
+  //   .then((base64String) => {
+  //     // Вывод строки base64 в консоль (можно использовать как нужно)
+  //     imgElement.src = `data:image/png;base64,${base64String}`;
+
+  //     const byteSize = base64String.length;
+  //     let sizeString, sizeValue;
+
+  //     if (byteSize < 1024) {
+  //       sizeString = "B";
+  //       sizeValue = byteSize;
+  //     } else if (byteSize < 1024 * 1024) {
+  //       sizeString = "KB";
+  //       sizeValue = byteSize / 1024;
+  //     } else {
+  //       sizeString = "MB";
+  //       sizeValue = byteSize / (1024 * 1024);
+  //     }
+
+  //     // Вывод размера в консоль
+  //     console.log(`Размер: ${sizeValue.toFixed(2)} ${sizeString}`);
+  //   })
+  //   .catch((error) => {
+  //     console.error("Ошибка:", error);
+  //   });
   imgElement.addEventListener("click", function () {
     window.open(imageUrl, "_blank");
   });
   imgElement.style.cursor = "pointer";
   return imgElement;
 }
-
 function createLinkElement(linkUrl) {
   const linkElement = document.createElement("a");
   linkElement.href = linkUrl;
@@ -297,7 +349,6 @@ function createLinkElement(linkUrl) {
   linkElement.textContent = linkUrl;
   return linkElement;
 }
-
 function createEmptyElement(parentElement) {
   createAnimatedElement("Invalid item type");
   console.error("Invalid item type");
@@ -305,47 +356,10 @@ function createEmptyElement(parentElement) {
   empty.appendChild(document.createTextNode("Empty."));
   parentElement.appendChild(empty);
 }
-
-function cancelEdit(item, content, textarea) {
-  console.log("prepare to cancel editing item:", item);
-  // Replace the textarea with the original span
-  const div = textarea.parentElement;
-
-  if (div) {
-    const index = Array.from(div.parentElement.children).indexOf(div);
-
-    if (index !== -1) {
-      div.replaceChild(content, textarea);
-      console.log("editing canceled");
-
-      // Remove confirm and cancel buttons
-      const confirmButton = div.querySelector(".confirm-button");
-      const cancelButton = div.querySelector(".cancel-button");
-      confirmButton?.remove();
-      cancelButton?.remove();
-
-      // Restore edit and delete buttons
-      const editButton = createButtons("Edit", "edit-button", () =>
-        editItem(item, content)
-      );
-      const deleteButton = createButtons("Delete", "delete-button", () =>
-        deleteItem(item.createdAt)
-      );
-      const pinButton =
-        item.pinned === "true"
-          ? createButtons("Unpin", "unpin-button", () => pinItem(item))
-          : createButtons("Pin", "pin-button", () => pinItem(item));
-      div.appendChild(editButton);
-      div.appendChild(deleteButton);
-      div.appendChild(pinButton);
-    } else {
-      createAnimatedElement("something went wrong during canceling editing");
-      console.error("something went wrong during canceling editing", item);
-    }
-  }
+function cancelEdit(item) {
+  updateItemInLocalStorage(item);
 }
-
-function updateLocalStorage(item) {
+function updateItemInLocalStorage(item) {
   console.log("prepare to update local storage with item:", item);
   chrome.storage.local.get("yourItemList", function (data) {
     const storedList = data.yourItemList || [];
@@ -357,8 +371,7 @@ function updateLocalStorage(item) {
 
     if (index !== -1) {
       // Update the item's content
-      storedList[index].itemData = item.itemData;
-      storedList[index].pinned = item.pinned;
+      storedList[index] = item;
       console.log(
         "item in stored storage replaced with new item content",
         item
@@ -370,6 +383,7 @@ function updateLocalStorage(item) {
           "item in local storage replaced with new item content",
           item
         );
+        loadInterface();
       });
     } else {
       createAnimatedElement(
@@ -377,40 +391,38 @@ function updateLocalStorage(item) {
       );
       console.error("something went wrong during updating local storage");
     }
-    displayItems(storedList);
   });
 }
-
 let activeItem = null;
-
 function createNewItemWithInput() {
-  console.log("creating new custom item");
   // Если уже есть активный элемент, удаляем его
   if (activeItem) {
     activeItem.remove();
-    activeItem = null;
   }
 
   const textArea = createTextArea("");
+  textArea.placeholder = "Введите текст...";
 
   const div = document.createElement("div");
   div.className = "item";
 
-  textArea.placeholder = "Введите текст...";
-  div.appendChild(textArea);
-
   const confirmButton = createButtons("Confirm", "confirm-button", function () {
-    console.log("confirmin creating new custom item...");
-    const text = textArea.value.trim();
+    const text = textArea.value;
     if (text !== "") {
-      // Обработка текста и фрагментов изображений
       const newItem = {
-        itemData: text,
         createdAt: new Date().getTime(),
+        title: "",
+        itemData: text,
+        pinned: false,
+        hide: false,
+        fav: false,
+        color: "",
+        tab: "",
+        list: "",
       };
       if (newItem) {
-        console.log("saving new custom item...");
         saveNewItem(newItem);
+        addNewItem(newItem);
       } else {
         createAnimatedElement(
           "something went wrong during saving new custom item"
@@ -418,104 +430,68 @@ function createNewItemWithInput() {
         console.error("something went wrong during saving new custom item");
       }
       div.remove();
-      // Add the new item to the interface
-      if (newItem) {
-        console.log("adding new custom item to the interface...");
-        addNewItem(newItem);
-      } else {
-        createAnimatedElement(
-          "something went wrong during adding new custom item to interface"
-        );
-        console.error(
-          "something went wrong during adding new custom item to interface"
-        );
-      }
     } else {
       createAnimatedElement("Новый элемент не может быть пустым!");
     }
   });
-  div.appendChild(confirmButton);
 
   const cancelButton = createButtons("Cancel", "cancel-button", function () {
     div.remove();
   });
-  div.appendChild(cancelButton);
+  div.append(textArea, confirmButton, cancelButton);
 
   textArea.addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
-      // Нажата клавиша Enter, вызываем click на кнопке
       confirmButton.click();
     }
   });
-
-  // Add the new item to the interface
   listOfItems.insertBefore(div, listOfItems.firstChild);
 
-  // Set the new active item
   activeItem = div;
-
-  // Set focus on the input field when creating a new item
   textArea.focus();
 }
-
 function createAnimatedElement(text, bgColor) {
   const existingElements = document.querySelectorAll(".animated-element");
 
   existingElements.forEach((existingElement) => {
     const currentBottom = parseFloat(existingElement.style.bottom);
-    existingElement.style.bottom = `${currentBottom + 45}px`; // Увеличиваем расстояние между элементами
+    existingElement.style.bottom = `${currentBottom + 45}px`;
     existingElement.animate(
       [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }],
-      {
-        duration: 150,
-        easing: "ease-out",
-        fill: "forwards",
-      }
+      { duration: 150, easing: "ease-out", fill: "forwards" }
     );
   });
 
-  // Создаем новый элемент
   const element = document.createElement("div");
   element.className = "animated-element";
-  element.style.background = bgColor || "#db3232";
+  element.style.backgroundColor = bgColor || "#db3232";
   element.style.bottom = "45px";
 
   const span = document.createElement("span");
   span.textContent = text || "UwU";
-  span.style.display = "flex";
-  span.style.alignItems = "center";
-  span.style.justifyContent = "center";
-  span.style.width = "100%"; // Заполняем всю ширину span для выравнивания текста
+  span.style.cssText =
+    "display: flex; align-items: center; justify-content: center; width: 100%;";
 
   element.appendChild(span);
   document.body.appendChild(element);
 
   const textWidth = span.offsetWidth;
+  element.style.width =
+    textWidth > parseInt(element.style.width)
+      ? textWidth + "px"
+      : element.style.width;
 
-  if (textWidth > parseInt(element.style.width)) {
-    // Если ширина текста больше ширины элемента, увеличиваем ширину элемента
-    element.style.width = textWidth + "px";
-  }
-
-  /// Добавляем анимацию
   element.animate(
     [
       { transform: "translateY(100%)", opacity: 0 },
       { transform: "translateY(0)", opacity: 1 },
     ],
-    {
-      duration: 150,
-      easing: "ease-out",
-      fill: "forwards",
-    }
+    { duration: 150, easing: "ease-out", fill: "forwards" }
   );
 
   // Удаляем элемент через 2.5 секунды
-  setTimeout(() => {
-    element.remove();
-  }, 2500);
+  setTimeout(() => element.remove(), 2500);
 }
-
 function saveNewItem(item) {
   chrome.storage.local.get("yourItemList", function (data) {
     const storedList = data.yourItemList || [];
@@ -527,30 +503,43 @@ function saveNewItem(item) {
     });
   });
 }
+const popupInfo = document.getElementById("popup-info");
+async function showInfo() {
+  const itemsNumber = document.getElementById("items-number");
+  const itemsSize = document.getElementById("items-size");
 
+  const a = await getNumberOfItems();
+  const b = await getLocalSize();
+
+  itemsNumber.textContent = a;
+  itemsSize.textContent = b;
+
+  popupInfo.style.display = "flex";
+}
+function hideInfo() {
+  const itemsNumber = document.getElementById("items-number");
+  const itemsSize = document.getElementById("items-size");
+
+  itemsNumber.textContent = "";
+  itemsSize.textContent = "";
+
+  popupInfo.style.display = "none";
+}
+function clearItemList() {
+  pinItemsDiv.innerHTML = "";
+  notPinItemsDiv.innerHTML = "";
+  createAnimatedElement("all items deleted from interface", "#71e997");
+
+  chrome.storage.local.remove("yourItemList");
+  createAnimatedElement("all items deleted from local storage", "#71e997");
+
+  loadInterface();
+}
+infoButton.addEventListener("mouseenter", showInfo);
+infoButton.addEventListener("mouseleave", hideInfo);
 clearAllButton.addEventListener("click", clearItemList);
 createItemButton.addEventListener("click", createNewItemWithInput);
+refreshButton.addEventListener("click", loadInterface);
 sendMessage.addEventListener("click", () =>
   createAnimatedElement("Проверка-проверка!!")
 );
-
-function clearItemList() {
-  console.log("prepare to delete all items");
-  pinItemsDiv.innerHTML = "";
-  notPinItemsDiv.innerHTML = "";
-  console.log("items deleted from interface");
-  chrome.storage.local.remove("yourItemList");
-  console.log("items deleted from local storage");
-
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
-    displayItems(storedItemList);
-  });
-}
-
-refreshButton.addEventListener("click", function () {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
-    displayItems(storedItemList);
-  });
-});

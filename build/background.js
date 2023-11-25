@@ -61,15 +61,21 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 function saveItem(info) {
-  const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl ||"";
+  const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
 
   let itemData;
   itemData = selected;
   // Add the new item to your list (modify this according to your list structure)
   const newItem = {
-    createdAt: "",
+    createdAt: new Date().getTime(),
+    title: "",
     itemData: itemData,
-    pinned: "",
+    pinned: false,
+    hide: false,
+    fav: false,
+    color: "",
+    tab: "",
+    list: "",
   };
 
   // Save the new item to local storage or wherever you store your list
@@ -82,9 +88,6 @@ function saveNewItem(item) {
   console.log("Saving new item:", item);
   chrome.storage.local.get("yourItemList", function (data) {
     const storedList = data.yourItemList || [];
-
-    // Assign a unique index to the new item
-    item.createdAt = new Date().getTime();
 
     // Check if the item with the same createdAt already exists
     const existingItemIndex = storedList.findIndex(
