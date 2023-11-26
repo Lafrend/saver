@@ -115,86 +115,143 @@ loadingDiv.appendChild(loadingSpan);
 console.log("show loading items");
 document.body.appendChild(loadingDiv);
 
-// Load stored data on extension open
+// document.getElementById("list").addEventListener("contextmenu", function (event) {
+//   event.preventDefault();
+
+//   const contextMenu = document.getElementById("customContextMenu");
+//   contextMenu.style.left = event.pageX + "px";
+//   contextMenu.style.top = event.pageY + "px";
+//   contextMenu.classList.remove("hidden");
+
+//   // Добавьте обработчики для пунктов меню
+//   document.getElementById("menuItem1").addEventListener("click", function () {
+//     alert("Menu Item 1 clicked!");
+//     contextMenu.classList.add("hidden");
+//   });
+
+//   document.getElementById("menuItem2").addEventListener("click", function () {
+//     alert("Menu Item 2 clicked!");
+//     contextMenu.classList.add("hidden");
+//   });
+
+//   document.getElementById("menuItem3").addEventListener("click", function () {
+//     alert("Menu Item 3 clicked!");
+//     contextMenu.classList.add("hidden");
+//   });
+// });
+// // Скрыть контекстное меню при клике вне его
+// document.addEventListener("click", function () {
+//   const contextMenu = document.getElementById("customContextMenu");
+//   contextMenu.classList.add("hidden");
+// });
+createTabsInHeader();
 loadInterface();
 
-function loadInterface() {
+function loadInterface(tab) {
   chrome.storage.local.get("yourItemList", function (data) {
     const storedItemList = data.yourItemList || [];
-    displayItems(storedItemList);
-    console.log("Loaded items:", storedItemList);
+    console.log("items in local:", storedItemList);
+    const tabToDisplay = tab ?? "";
+    console.log("displaying", tabToDisplay);
+    displayItems(filterItemsByTab(storedItemList, tabToDisplay));
   });
 }
-function getLocalSize() {
-  return new Promise((resolve) => {
-    chrome.storage.local.getBytesInUse("yourItemList", function (bytesInUse) {
-      const size = getCorrectSize(bytesInUse);
-      resolve(size);
-    });
-  });
+function filterItemsByTab(itemList, tabToDisplay) {
+  return (tabToDisplay === "" || tabToDisplay === "Main")
+    ? itemList
+    : itemList.filter((item) => item.tab === tabToDisplay);
 }
-function getNumberOfItems() {
-  return new Promise((resolve) => {
-    // Получение данных из локального хранилища
-    chrome.storage.local.get("yourItemList", function (result) {
-      let numberOfItems;
-      // Проверка наличия ключа в хранилище
-      if ("yourItemList" in result) {
-        const itemList = result.yourItemList;
-        numberOfItems = itemList.length; // Получение количества элементов
-      } else {
-        numberOfItems = 0;
-      }
-      resolve(numberOfItems);
-    });
+async function getLocalSize() {
+  const bytesInUse = await new Promise((resolve) => {
+    chrome.storage.local.getBytesInUse("yourItemList", resolve);
   });
+  return getCorrectSize(bytesInUse);
+}
+async function getNumberOfItems() {
+  try {
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get("yourItemList", resolve);
+    });
+    const itemList = result.yourItemList || [];
+    const numberOfItems = itemList.length;
+    return numberOfItems;
+  } catch (error) {
+    return 0;
+  }
 }
 function getCorrectSize(bytes) {
-  let sizeString, sizeValue;
-  if (bytes < 1024) {
-    sizeString = "B";
-    sizeValue = bytes;
-  } else if (bytes < 1024 * 1024) {
-    sizeString = "KB";
-    sizeValue = bytes / 1024;
-  } else {
-    sizeString = "MB";
-    sizeValue = bytes / (1024 * 1024);
+  const sizeUnits = ["B", "KB", "MB"];
+  let unitIndex = 0;
+  while (bytes >= 1024 && unitIndex < sizeUnits.length - 1) {
+    bytes /= 1024;
+    unitIndex++;
   }
-  const size = sizeValue.toFixed(2) + sizeString;
-  return size;
+  return bytes.toFixed(2) + sizeUnits[unitIndex];
 }
 window.addEventListener("load", (event) => {
   console.log("removing loading items");
   loadingDiv.remove();
 });
 function displayItems(itemListData) {
-  console.log("displaying loaded items");
+  console.log("displaying loaded items", itemListData);
   pinItemsDiv.innerHTML = "";
   notPinItemsDiv.innerHTML = "";
   itemListData.forEach(function (item) {
     addNewItem(item);
   });
 }
+function createTabsInHeader() {
+  chrome.storage.local.get("yourItemList", function (data) {
+    const storedItemList = data.yourItemList || [];
+    const uniqueTabs = Array.from(
+      new Set(storedItemList.map((item) => item.tab))
+    );
+    const tabsToDisplay = [
+      "Main",
+      "Fav",
+      ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
+    ];
+    const tabList = document.getElementById("tab-list");
+    tabList.innerHTML = "";
+
+    tabsToDisplay.forEach((tabName) => {
+      const tabElement = createTabElement(tabName);
+      tabList.appendChild(tabElement);
+    });
+    highlightActiveTab("Main");
+  });
+}
+function createTabElement(tabName) {
+  const tabElement = document.createElement("div");
+  tabElement.innerText = tabName;
+  tabElement.id = tabName;
+  tabElement.className = "tab other-tab";
+  tabElement.addEventListener("click", () => {
+    highlightActiveTab(tabName);
+    tabName === "Main" ? loadInterface() : loadInterface(tabName);
+  });
+  return tabElement;
+}
+function highlightActiveTab(activeTab) {
+  const tabList = document.getElementById("tab-list");
+  tabList.childNodes.forEach((tab) => {
+    tab.className = tab.id === activeTab ? "tab active-tab" : "tab other-tab";
+  });
+}
 function addNewItem(item) {
-  const notPinnedItem = document.createElement("div");
-  const pinnedItem = document.createElement("div");
-  notPinnedItem.className = "item";
-  pinnedItem.className = "pin item";
+  const notPinnedItem = createItemElement("item");
+  const pinnedItem = createItemElement("pin item");
 
-  let itemContent;
-
-  item.hide
-    ? item.hide === false || ""
-      ? (itemContent = recognitionItems(item))
-      : (itemContent = "")
-    : (itemContent = recognitionItems(item));
+  const itemContent = item.hide
+    ? item.hide === false
+      ? recognitionItems(item)
+      : ""
+    : recognitionItems(item);
 
   const editButton = createButtons("Edit", "edit-button", () => editItem(item));
   const deleteButton = createButtons("Delete", "delete-button", () =>
     deleteItem(item.createdAt)
   );
-
   const pinButton = createButtons(
     item.pinned ? "Unpin" : "Pin",
     "pin-unpin-button",
@@ -205,6 +262,9 @@ function addNewItem(item) {
     "hide-n-show-button",
     () => hideNshowItem(item)
   );
+  const moveButton = createButtons("Move", "move-button", () => {
+    moveButton.appendChild(buildDropdownMenu(item));
+  });
 
   // Set data-createdAt attribute to the createdAt value
   pinnedItem.dataset.createdAt = item.createdAt;
@@ -218,12 +278,18 @@ function addNewItem(item) {
     editButton,
     deleteButton,
     pinButton,
-    hideButton
+    hideButton,
+    moveButton
   );
 
   targetDiv.insertBefore(targetItem, targetDiv.firstChild);
 
   listOfItems.append(pinItemsDiv, notPinItemsDiv);
+}
+function createItemElement(className) {
+  const itemElement = document.createElement("div");
+  itemElement.className = className;
+  return itemElement;
 }
 function createButtons(label, className, clickHandler) {
   const button = document.createElement("button");
@@ -310,6 +376,26 @@ function hideNshowItem(item) {
     ? (itemToHide.removeChild(itemToHide.firstChild),
       updateItemInLocalStorage(item))
     : updateItemInLocalStorage(item);
+}
+function buildDropdownMenu(item) {
+  const dropdownMenu = document.createElement("div");
+  dropdownMenu.className = "dropdown-menu";
+
+  const tabList = document.getElementById("tab-list");
+  tabList.childNodes.forEach((tab) => {
+    const tabElement = document.createElement("div");
+    tabElement.innerText = tab.innerText;
+    tabElement.addEventListener("click", () => {
+      moveItemToTab(item, tabElement.innerText);
+    });
+    dropdownMenu.appendChild(tabElement);
+  });
+
+  return dropdownMenu;
+}
+function moveItemToTab(item, tabToMove) {
+  item.tab = tabToMove;
+  updateItemInLocalStorage(item);
 }
 function createTextArea(content) {
   const textarea = document.createElement("textarea");
@@ -474,7 +560,7 @@ function updateItemInLocalStorage(item) {
           "item in local storage replaced with new item content",
           item
         );
-        loadInterface();
+        loadInterface(getCurrentTab());
       });
     } else {
       createAnimatedElement(
@@ -490,6 +576,8 @@ function createNewItemWithInput() {
   if (activeItem) {
     activeItem.remove();
   }
+
+  const activeTab = getCurrentTab();
 
   const textArea = createTextArea("");
   textArea.placeholder = "Введите текст...";
@@ -508,18 +596,18 @@ function createNewItemWithInput() {
         hide: false,
         fav: false,
         color: "",
-        tab: "",
+        tab: activeTab,
         list: "",
       };
-      if (newItem) {
-        saveNewItem(newItem);
-        addNewItem(newItem);
-      } else {
-        createAnimatedElement(
-          "something went wrong during saving new custom item"
-        );
-        console.error("something went wrong during saving new custom item");
-      }
+      saveNewItem(newItem)
+        .then(() => loadInterface(activeTab))
+        .catch((error) => {
+          createAnimatedElement(
+            "something went wrong during saving new custom item"
+          );
+          console.error("Error during saving new item:", error);
+          // Обработка ошибок при сохранении
+        });
       div.remove();
     } else {
       createAnimatedElement("Новый элемент не может быть пустым!");
@@ -540,6 +628,14 @@ function createNewItemWithInput() {
 
   activeItem = div;
   textArea.focus();
+}
+function getCurrentTab() {
+  const activeTabElement = document.querySelector(".active-tab");
+  let activeTab = "";
+  if (activeTabElement) {
+    activeTab = activeTabElement.innerText;
+    return activeTab;
+  }
 }
 function createAnimatedElement(text, bgColor) {
   const existingElements = document.querySelectorAll(".animated-element");
@@ -584,13 +680,17 @@ function createAnimatedElement(text, bgColor) {
   setTimeout(() => element.remove(), 2500);
 }
 function saveNewItem(item) {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
+  console.log("saving item");
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get("yourItemList", function (data) {
+      const storedList = data.yourItemList || [];
 
-    storedList.push(item);
+      storedList.push(item);
 
-    chrome.storage.local.set({ yourItemList: storedList }, function () {
-      console.log("Item saved successfully:", item);
+      chrome.storage.local.set({ yourItemList: storedList }, function () {
+        console.log("Item saved successfully:", item);
+        resolve();
+      });
     });
   });
 }
@@ -624,13 +724,13 @@ function clearItemList() {
   chrome.storage.local.remove("yourItemList");
   createAnimatedElement("all items deleted from local storage", "#71e997");
 
-  loadInterface();
+  loadInterface(getCurrentTab());
 }
 infoButton.addEventListener("mouseenter", showInfo);
 infoButton.addEventListener("mouseleave", hideInfo);
 clearAllButton.addEventListener("click", clearItemList);
 createItemButton.addEventListener("click", createNewItemWithInput);
-refreshButton.addEventListener("click", loadInterface);
+refreshButton.addEventListener("click", () => loadInterface(getCurrentTab()));
 sendMessage.addEventListener("click", () =>
   createAnimatedElement("Проверка-проверка!!")
 );

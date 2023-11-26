@@ -2,14 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" type="text/css" href="popup.css" />
     <title>MyExtension</title>
   </head>
   <body>
+    <header id="tab-list">
+    </header>
     <div id="list">
-      <div id="listOfItems">
-      </div>
+      <div id="listOfItems"></div>
     </div>
     <div class="footer">
       <button id="clearAllButton" type="button">Delete all</button>
@@ -22,6 +23,13 @@
       <span id="items-number"></span>
       <span id="items-size"></span>
     </div>
+    <!-- <div id="customContextMenu" class="hidden">
+      <ul>
+        <li id="menuItem1">Menu Item 1</li>
+        <li id="menuItem2">Menu Item 2</li>
+        <li id="menuItem3">Menu Item 3</li>
+      </ul>
+    </div> -->
     <script src="popup.js"></script>
   </body>
 </html>

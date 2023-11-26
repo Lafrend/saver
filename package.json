@@ -18,6 +18,8 @@
     "webpack-merge": "^5.10.0"
   },
   "dependencies": {
-    "chrome-types": "^0.1.246"
+    "chrome-types": "^0.1.246",
+    "iostream": "^0.0.3",
+    "vector": "^0.0.4"
   }
 }
