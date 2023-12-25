@@ -1,7 +1,5 @@
 "use strict";
 
-import domtoimage from "dom-to-image";
-
 // Обработчик сообщений от фонового скрипта
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.command === "getSelectedText") {
