@@ -10,6 +10,7 @@ const createItemButton = document.getElementById("createItemButton");
 const refreshButton = document.getElementById("refreshButton");
 const sendMessage = document.getElementById("sendMessage");
 const infoButton = document.getElementById("infoButton");
+const create1000 = document.getElementById("create1000");
 
 const pinItemsDiv = document.createElement("div");
 const notPinItemsDiv = document.createElement("div");
@@ -55,7 +56,6 @@ document.body.appendChild(loadingDiv);
 // });
 createTabsInHeader();
 loadInterface();
-
 function loadInterface(tab) {
   chrome.storage.local.get("yourItemList", function (data) {
     const storedItemList = data.yourItemList || [];
@@ -66,7 +66,7 @@ function loadInterface(tab) {
   });
 }
 function filterItemsByTab(itemList, tabToDisplay) {
-  return (tabToDisplay === "" || tabToDisplay === "Main")
+  return tabToDisplay === "" || tabToDisplay === "Main"
     ? itemList
     : itemList.filter((item) => item.tab === tabToDisplay);
 }
@@ -85,6 +85,7 @@ async function getNumberOfItems() {
     const numberOfItems = itemList.length;
     return numberOfItems;
   } catch (error) {
+    console.error(`Ошибка в getNumberOfItems: ${error}`);
     return 0;
   }
 }
@@ -345,33 +346,54 @@ function createTextWithImageElement(parent, text) {
   let remainingText = text;
 
   while (remainingText) {
-    const urlMatch = remainingText.match(/https?:\/\/[^ ]+/i);
+    // Распознавание текста изображения (начинающегося с "data:image/") с использованием регулярного выражения
+    const imageDataMatch = remainingText.match(/data:image\/[^ ]+/i);
 
-    if (urlMatch) {
-      const textBefore = remainingText.substring(0, urlMatch.index);
+    if (imageDataMatch) {
+      const textBefore = remainingText.substring(0, imageDataMatch.index);
       if (textBefore) {
         const textElement = document.createElement("span");
         textElement.appendChild(document.createTextNode(textBefore));
         parent.appendChild(textElement);
       }
 
-      const element = urlMatch[0].match(/\.(png|jpeg|jpg|webp)$/i)
-        ? createImageElement(urlMatch[0])
-        : createLinkElement(urlMatch[0]);
-
-      parent.appendChild(element);
+      const imgElement = createImageElement(imageDataMatch[0]);
+      parent.appendChild(imgElement);
 
       remainingText = remainingText.substring(
-        urlMatch.index + urlMatch[0].length
+        imageDataMatch.index + imageDataMatch[0].length
       );
     } else {
-      const textElement = document.createElement("span");
-      textElement.appendChild(document.createTextNode(remainingText));
-      parent.appendChild(textElement);
-      remainingText = "";
+      // Если не найдено совпадение для текста изображения, продолжаем поиск обычных URL
+      const urlMatch = remainingText.match(/https?:\/\/[^ ]+/i);
+
+      if (urlMatch) {
+        const textBefore = remainingText.substring(0, urlMatch.index);
+        if (textBefore) {
+          const textElement = document.createElement("span");
+          textElement.appendChild(document.createTextNode(textBefore));
+          parent.appendChild(textElement);
+        }
+
+        const element = urlMatch[0].match(/\.(png|jpeg|jpg|webp)$/i)
+          ? createImageElement(urlMatch[0])
+          : createLinkElement(urlMatch[0]);
+
+        parent.appendChild(element);
+
+        remainingText = remainingText.substring(
+          urlMatch.index + urlMatch[0].length
+        );
+      } else {
+        const textElement = document.createElement("span");
+        textElement.appendChild(document.createTextNode(remainingText));
+        parent.appendChild(textElement);
+        remainingText = "";
+      }
     }
   }
 }
+
 function createImageElement(imageUrl) {
   const imgElement = document.createElement("img");
   imgElement.src = imageUrl;
@@ -635,6 +657,29 @@ function clearItemList() {
 
   loadInterface(getCurrentTab());
 }
+function createNumberedList(number) {
+  console.log(`creating ${number} items`);
+  const itemList = [];
+
+  for (let i = 1; i <= number; i++) {
+    const newItem = {
+      createdAt: new Date().getTime(),
+      title: "",
+      itemData: `item №${i}`,
+      pinned: false,
+      hide: false,
+      fav: false,
+      color: "",
+      tab: "",
+      list: "",
+    };
+
+    itemList.push(newItem);
+  }
+  itemList.forEach(function (item) {
+    addNewItem(item);
+  });
+}
 infoButton.addEventListener("mouseenter", showInfo);
 infoButton.addEventListener("mouseleave", hideInfo);
 clearAllButton.addEventListener("click", clearItemList);
@@ -643,3 +688,4 @@ refreshButton.addEventListener("click", () => loadInterface(getCurrentTab()));
 sendMessage.addEventListener("click", () =>
   createAnimatedElement("Проверка-проверка!!")
 );
+create1000.addEventListener("click", () => createNumberedList(1000));
