@@ -4,7 +4,6 @@
 chrome.runtime.onInstalled.addListener(function () {
   loadItems();
 });
-
 function loadItems() {
   // Load stored data on extension open
   chrome.storage.local.get("yourItemList", function (data) {
@@ -12,7 +11,6 @@ function loadItems() {
     console.log("Loaded items:", storedList);
   });
 }
-
 chrome.runtime.onInstalled.addListener(function () {
   // Add a context menu item for selected text
   chrome.contextMenus.create({
@@ -21,7 +19,6 @@ chrome.runtime.onInstalled.addListener(function () {
     contexts: ["selection", "image", "video", "link"],
   });
 });
-
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
   if (info.menuItemId == "save") {
     const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
@@ -30,12 +27,105 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
         const activeTab = tabs[0];
         chrome.tabs.sendMessage(activeTab.id, { command: "processImage", imageUrl: selected });
         console.log("Send message to content with imgurl:", selected);
+        // compressAndSaveImage(activeTab.id, selected);
       });
     } else {
       saveItem(info);
     }
   }
 });
+// function compressAndSaveImage(tabId, imageUrl) {
+//   const MAX_WIDTH = 400; // Максимальная ширина
+
+//   // Загружаем изображение
+//   const img = new Image();
+//   img.crossOrigin = "Anonymous";
+//   img.onload = function () {
+//     const canvas = document.createElement("canvas");
+//     const scaleFactor = MAX_WIDTH / img.width;
+//     canvas.width = MAX_WIDTH;
+//     canvas.height = img.height * scaleFactor;
+
+//     const ctx = canvas.getContext("2d");
+
+//     // Рисуем изображение на canvas с измененными размерами
+//     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+//     // Получаем сжатое изображение в формате base64
+//     const compressedImageBase64 = canvas.toDataURL("image/jpeg", 0.7); // Измените формат и качество при необходимости
+
+//     // Отправляем сжатое изображение в контент-скрипт
+//     chrome.tabs.sendMessage(tabId, {
+//       command: "imageProcessed",
+//       formattedText: compressedImageBase64,
+//     });
+//     console.log("Compressed and sent image:", compressedImageBase64);
+
+//     const compressedItem = {
+//       createdAt: new Date().getTime(),
+//       title: "",
+//       itemData: compressedImageBase64,
+//       pinned: false,
+//       hide: false,
+//       fav: false,
+//       color: "",
+//       tab: "",
+//       list: "compressedImages", // Указываем список для сжатых изображений
+//     };
+
+//     saveNewItem(compressedItem);
+//   };
+//   img.src = imageUrl;
+// }
+
+// function compressAndSaveImage(tabId, imageUrl) {
+//   const MAX_WIDTH = 400; // Максимальная ширина
+
+//   // Загружаем изображение
+//   const img = new Image();
+//   img.crossOrigin = "Anonymous";
+//   img.onload = function () {
+//     const canvas = document.createElement("canvas");
+//     const scaleFactor = MAX_WIDTH / img.width;
+//     canvas.width = MAX_WIDTH;
+//     canvas.height = img.height * scaleFactor;
+
+//     const ctx = canvas.getContext("2d");
+
+//     // Рисуем изображение на canvas с измененными размерами
+//     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+//     // Получаем сжатое изображение в формате base64
+//     canvas.toBlob(function (blob) {
+//       pica.resize(blob, canvas, { quality: 3 }, function (result) {
+//         const compressedImageBase64 = result.toDataURL("image/jpeg");
+
+//         // Отправляем сжатое изображение в контент-скрипт
+//         chrome.tabs.sendMessage(tabId, {
+//           command: "imageProcessed",
+//           formattedText: compressedImageBase64,
+//         });
+//         console.log("Compressed and sent image:", compressedImageBase64);
+
+//         const compressedItem = {
+//           createdAt: new Date().getTime(),
+//           title: "",
+//           itemData: compressedImageBase64,
+//           pinned: false,
+//           hide: false,
+//           fav: false,
+//           color: "",
+//           tab: "",
+//           list: "compressedImages", // Указываем список для сжатых изображений
+//         };
+
+//         saveNewItem(compressedItem);
+//       });
+//     }, "image/jpeg", 0.7); // Измените формат и качество при необходимости
+//   };
+//   img.src = imageUrl;
+// }
+
 
 // Используем chrome.commands.onCommand для обработки горячих клавиш
 chrome.commands.onCommand.addListener(function (command) {
@@ -47,7 +137,6 @@ chrome.commands.onCommand.addListener(function (command) {
     });
   }
 });
-
 // Обработчик сообщений от контент-скрипта
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.command === "saveItem" && request.selectedText) {
@@ -76,7 +165,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     saveNewItem(newItem);
   }
 });
-
 // const SERVER_URL = 'http://localhost:3000'; // Замените на ваш домен и порт
 
 // chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -116,9 +204,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 //     chrome.runtime.sendMessage({ command: "processImage", imageUrl: imageUrl });
 //   }
 // });
-
-
-
 function saveItem(info) {
   const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
 
@@ -174,12 +259,10 @@ function formatImageAsText(imageUrl) {
     img.src = imageUrl;
   });
 }
-
 function isImage(url) {
   // Простая проверка расширения URL на изображение
   return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null;
 }
-
 function saveNewItem(item) {
   // Add your logic to save the item to your list using chrome.storage.local
   // Modify this function according to your storage requirements

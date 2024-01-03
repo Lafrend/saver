@@ -95,21 +95,24 @@ __webpack_require__.r(__webpack_exports__);
 
 console.log("This is a popup!");
 
-const listOfItems = document.getElementById("listOfItems");
-const clearAllButton = document.getElementById("clearAllButton");
-const createItemButton = document.getElementById("createItemButton");
-const refreshButton = document.getElementById("refreshButton");
-const sendMessage = document.getElementById("sendMessage");
-const infoButton = document.getElementById("infoButton");
-const create1000 = document.getElementById("create1000");
+const getById = (id) => document.getElementById(id);
+const create = (tag) => document.createElement(tag);
 
-const pinItemsDiv = document.createElement("div");
-const notPinItemsDiv = document.createElement("div");
+const listOfItems = getById("listOfItems");
+const clearAllButton = getById("clearAllButton");
+const createItemButton = getById("createItemButton");
+const refreshButton = getById("refreshButton");
+const sendMessage = getById("sendMessage");
+const infoButton = getById("infoButton");
+const create1000 = getById("create1000");
+
+const pinItemsDiv = create("div");
+const notPinItemsDiv = create("div");
 pinItemsDiv.className = "pin-items-div";
 notPinItemsDiv.className = "not-pin-items-div";
 
-const loadingDiv = document.createElement("div");
-const loadingSpan = document.createElement("span");
+const loadingDiv = create("div");
+const loadingSpan = create("span");
 loadingDiv.className = "loading-div";
 loadingSpan.textContent = "Loading...";
 loadingDiv.appendChild(loadingSpan);
@@ -263,6 +266,9 @@ function addNewItem(item) {
     "hide-n-show-button",
     () => hideNshowItem(item)
   );
+
+  // const moveDropdownList = createDropdownList(item);
+  // moveDropdownList.className = "move-dropdown-list";
   const moveButton = createButtons("Move", "move-button", () => {
     moveButton.appendChild(buildDropdownMenu(item));
   });
@@ -280,7 +286,8 @@ function addNewItem(item) {
     deleteButton,
     pinButton,
     hideButton,
-    moveButton
+    moveButton,
+    //moveDropdownList,
   );
 
   targetDiv.insertBefore(targetItem, targetDiv.firstChild);
@@ -299,6 +306,29 @@ function createButtons(label, className, clickHandler) {
   button.type = "button";
   button.addEventListener("click", clickHandler);
   return button;
+}
+function createDropdownList(item) {
+  const dropdownList = document.createElement("select");
+  dropdownList.className = "dropdown-list";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.text = "Move to...";
+  defaultOption.value = "";
+  dropdownList.add(defaultOption);
+
+  const tabList = document.getElementById("tab-list");
+  tabList.childNodes.forEach((tab) => {
+    const option = document.createElement("option");
+    option.value = tab.innerText;
+    option.text = tab.innerText;
+    dropdownList.add(option);
+  });
+
+  dropdownList.addEventListener("change", () => {
+    moveItemToTab(item, dropdownList.value);
+  });
+
+  return dropdownList;
 }
 function deleteItem(createdAt) {
   console.log("Preparing to delete item with createdAt:", createdAt);
@@ -487,6 +517,7 @@ function createTextWithImageElement(parent, text) {
 
 function createImageElement(imageUrl) {
   const imgElement = document.createElement("img");
+  imgElement.loading = "lazy";
   imgElement.src = imageUrl;
   // // Получение изображения по URL в виде Blob
   // async function getImageBlob(url) {
