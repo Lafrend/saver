@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@ant-design/web3": "^1.1.2",
+    "@ant-design/web3-wagmi": "^1.1.2",
     "antd": "^5.12.7",
     "body-parser": "^1.20.2",
     "browserify-fs": "^1.0.0",
@@ -36,6 +37,7 @@
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "util": "^0.12.5",
-    "vector": "^0.0.4"
+    "vector": "^0.0.4",
+    "wagmi": "^1.4.12"
   }
 }

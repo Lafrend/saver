@@ -68,6 +68,40 @@ function loadInterface(tab) {
     displayItems(filterItemsByTab(storedItemList, tabToDisplay));
   });
 }
+
+// async function loadInterface(tab) {
+//   try {
+//     const data = await new Promise((resolve) => {
+//       chrome.storage.local.get("yourItemList", resolve);
+//     });
+//     const storedItemList = data.yourItemList || [];
+//     // ... rest of the code
+//   } catch (error) {
+//     console.error(`Error in loadInterface: ${error}`);
+//   }
+// }
+
+// async function loadInterface(tab) {
+//   const data = await getLocalStorage("yourItemList");
+//   const storedItemList = data.yourItemList || [];
+//   // ... rest of the code
+// }
+// const getLocalStorage = (key) => {
+//   return new Promise((resolve) => {
+//     chrome.storage.local.get(key, resolve);
+//   });
+// };
+
+// listOfItems.addEventListener("click", (event) => {
+//   const target = event.target;
+//   if (target.classList.contains("delete-button")) {
+//     const createdAt = target.closest(".item").dataset.createdAt;
+//     deleteItem(createdAt);
+//   }
+//   // ... add similar checks for other dynamic buttons
+// });
+
+
 function filterItemsByTab(itemList, tabToDisplay) {
   return tabToDisplay === "" || tabToDisplay === "Main"
     ? itemList
@@ -95,11 +129,13 @@ async function getNumberOfItems() {
 function getCorrectSize(bytes) {
   const sizeUnits = ["B", "KB", "MB"];
   let unitIndex = 0;
+
   while (bytes >= 1024 && unitIndex < sizeUnits.length - 1) {
     bytes /= 1024;
     unitIndex++;
   }
-  return bytes.toFixed(2) + sizeUnits[unitIndex];
+
+  return `${bytes.toFixed(2)} ${sizeUnits[unitIndex]}`;
 }
 window.addEventListener("load", (event) => {
   console.log("removing loading items");
@@ -641,10 +677,10 @@ function createAnimatedElement(text, bgColor) {
   // Удаляем элемент через 2.5 секунды
   setTimeout(() => element.remove(), 2500);
 }
-function saveNewItem(item) {
+async function saveNewItem(item) {
   console.log("saving item");
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get("yourItemList", function (data) {
+    chrome.storage.local.get("yourItemList", async function (data) {
       const storedList = data.yourItemList || [];
 
       storedList.push(item);
