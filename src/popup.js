@@ -14,6 +14,7 @@ const refreshButton = getById("refreshButton");
 const sendMessage = getById("sendMessage");
 const infoButton = getById("infoButton");
 const create1000 = getById("create1000");
+const conMenu = getById("customContextMenu");
 
 const pinItemsDiv = create("div");
 const notPinItemsDiv = create("div");
@@ -28,79 +29,108 @@ loadingDiv.appendChild(loadingSpan);
 console.log("show loading items");
 document.body.appendChild(loadingDiv);
 
-// document.getElementById("list").addEventListener("contextmenu", function (event) {
-//   event.preventDefault();
+listOfItems.addEventListener("contextmenu", function (event) {
+  const target = event.target;
+  const itemElement = findParentWithClass(target, "item");
+  if (itemElement) {
+    event.preventDefault();
 
-//   const contextMenu = document.getElementById("customContextMenu");
-//   contextMenu.style.left = event.pageX + "px";
-//   contextMenu.style.top = event.pageY + "px";
-//   contextMenu.classList.remove("hidden");
+    const contextMenu = document.getElementById("customContextMenu");
 
-//   // Добавьте обработчики для пунктов меню
-//   document.getElementById("menuItem1").addEventListener("click", function () {
-//     alert("Menu Item 1 clicked!");
-//     contextMenu.classList.add("hidden");
-//   });
+    // Задаем ширину и высоту контекстного меню
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
 
-//   document.getElementById("menuItem2").addEventListener("click", function () {
-//     alert("Menu Item 2 clicked!");
-//     contextMenu.classList.add("hidden");
-//   });
+    // Задаем максимальное расстояние от края страницы, при котором меню будет открываться слева или справа
+    const maxDistanceX = 20;
 
-//   document.getElementById("menuItem3").addEventListener("click", function () {
-//     alert("Menu Item 3 clicked!");
-//     contextMenu.classList.add("hidden");
-//   });
-// });
-// // Скрыть контекстное меню при клике вне его
-// document.addEventListener("click", function () {
-//   const contextMenu = document.getElementById("customContextMenu");
-//   contextMenu.classList.add("hidden");
-// });
-createTabsInHeader();
-loadInterface();
-function loadInterface(tab) {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
+    // Получаем размеры окна браузера
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Вычисляем доступное пространство справа и слева от курсора
+    const spaceRight = windowWidth - event.pageX;
+    const spaceLeft = event.pageX;
+
+    // Определяем, где открывать контекстное меню: справа или слева
+    const openRight = spaceRight >= menuWidth || spaceRight >= spaceLeft;
+
+    // Устанавливаем положение контекстного меню
+    if (openRight) {
+      contextMenu.style.left =
+        Math.min(event.pageX, windowWidth - menuWidth - maxDistanceX) + "px";
+    } else {
+      contextMenu.style.left =
+        Math.max(event.pageX - menuWidth, maxDistanceX) + "px";
+    }
+
+    contextMenu.style.top =
+      Math.min(event.pageY, windowHeight - menuHeight) + "px";
+    contextMenu.classList.remove("hidden");
+
+    // // Добавьте обработчики для пунктов меню
+    // document.getElementById("menuItem1").addEventListener("click", function () {
+    //   alert("Menu Item 1 clicked!");
+    //   contextMenu.classList.add("hidden");
+    // });
+
+    // document.getElementById("menuItem2").addEventListener("click", function () {
+    //   alert("Menu Item 2 clicked!");
+    //   contextMenu.classList.add("hidden");
+    // });
+
+    // document.getElementById("menuItem3").addEventListener("click", function () {
+    //   alert("Menu Item 3 clicked!");
+    //   contextMenu.classList.add("hidden");
+    // });
+  }
+});
+function findParentWithClass(element, className) {
+  // Функция ищет родительский элемент с заданным классом
+  while (element && !element.classList.contains(className)) {
+    element = element.parentElement;
+  }
+  return element;
+}
+// Скрыть контекстное меню при клике вне его
+document.addEventListener("click", function () {
+  const contextMenu = document.getElementById("customContextMenu");
+  contextMenu.classList.add("hidden");
+});
+
+const getLocalStorage = (key) => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, resolve);
+  });
+};
+
+let dLStorage = await getLocalStorage("yourItemList");
+let storedItemList = dLStorage.yourItemList || [];
+dLStorage = null;
+
+async function loadInterface(tab) {
+  try {
     console.log("items in local:", storedItemList);
-    const tabToDisplay = tab ?? "";
+    const tabToDisplay = tab || "";
     console.log("displaying", tabToDisplay);
     displayItems(filterItemsByTab(storedItemList, tabToDisplay));
-  });
+  } catch (error) {
+    console.error(`Error in loadInterface: ${error}`);
+  }
 }
-
-// async function loadInterface(tab) {
-//   try {
-//     const data = await new Promise((resolve) => {
-//       chrome.storage.local.get("yourItemList", resolve);
-//     });
-//     const storedItemList = data.yourItemList || [];
-//     // ... rest of the code
-//   } catch (error) {
-//     console.error(`Error in loadInterface: ${error}`);
-//   }
-// }
-
-// async function loadInterface(tab) {
-//   const data = await getLocalStorage("yourItemList");
-//   const storedItemList = data.yourItemList || [];
-//   // ... rest of the code
-// }
-// const getLocalStorage = (key) => {
-//   return new Promise((resolve) => {
-//     chrome.storage.local.get(key, resolve);
-//   });
-// };
+createTabsInHeader();
+loadInterface();
 
 // listOfItems.addEventListener("click", (event) => {
 //   const target = event.target;
 //   if (target.classList.contains("delete-button")) {
 //     const createdAt = target.closest(".item").dataset.createdAt;
 //     deleteItem(createdAt);
+//   } else if (target.classList.contains("edit-button")) {
+//     editItem(item);
 //   }
 //   // ... add similar checks for other dynamic buttons
 // });
-
 
 function filterItemsByTab(itemList, tabToDisplay) {
   return tabToDisplay === "" || tabToDisplay === "Main"
@@ -115,11 +145,7 @@ async function getLocalSize() {
 }
 async function getNumberOfItems() {
   try {
-    const result = await new Promise((resolve) => {
-      chrome.storage.local.get("yourItemList", resolve);
-    });
-    const itemList = result.yourItemList || [];
-    const numberOfItems = itemList.length;
+    const numberOfItems = storedItemList.length;
     return numberOfItems;
   } catch (error) {
     console.error(`Ошибка в getNumberOfItems: ${error}`);
@@ -150,25 +176,22 @@ function displayItems(itemListData) {
   });
 }
 function createTabsInHeader() {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
-    const uniqueTabs = Array.from(
-      new Set(storedItemList.map((item) => item.tab))
-    );
-    const tabsToDisplay = [
-      "Main",
-      "Fav",
-      ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
-    ];
-    const tabList = document.getElementById("tab-list");
-    tabList.innerHTML = "";
+  const uniqueTabs = Array.from(
+    new Set(storedItemList.map((item) => item.tab))
+  );
+  const tabsToDisplay = [
+    "Main",
+    "Fav",
+    ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
+  ];
+  const tabList = document.getElementById("tab-list");
+  tabList.innerHTML = "";
 
-    tabsToDisplay.forEach((tabName) => {
-      const tabElement = createTabElement(tabName);
-      tabList.appendChild(tabElement);
-    });
-    highlightActiveTab("Main");
+  tabsToDisplay.forEach((tabName) => {
+    const tabElement = createTabElement(tabName);
+    tabList.appendChild(tabElement);
   });
+  highlightActiveTab("Main");
 }
 function createTabElement(tabName) {
   const tabElement = document.createElement("div");
@@ -231,7 +254,7 @@ function addNewItem(item) {
     deleteButton,
     pinButton,
     hideButton,
-    moveButton,
+    moveButton
     //moveDropdownList,
   );
 
@@ -252,29 +275,29 @@ function createButtons(label, className, clickHandler) {
   button.addEventListener("click", clickHandler);
   return button;
 }
-function createDropdownList(item) {
-  const dropdownList = document.createElement("select");
-  dropdownList.className = "dropdown-list";
+// function createDropdownList(item) {
+//   const dropdownList = document.createElement("select");
+//   dropdownList.className = "dropdown-list";
 
-  const defaultOption = document.createElement("option");
-  defaultOption.text = "Move to...";
-  defaultOption.value = "";
-  dropdownList.add(defaultOption);
+//   const defaultOption = document.createElement("option");
+//   defaultOption.text = "Move to...";
+//   defaultOption.value = "";
+//   dropdownList.add(defaultOption);
 
-  const tabList = document.getElementById("tab-list");
-  tabList.childNodes.forEach((tab) => {
-    const option = document.createElement("option");
-    option.value = tab.innerText;
-    option.text = tab.innerText;
-    dropdownList.add(option);
-  });
+//   const tabList = document.getElementById("tab-list");
+//   tabList.childNodes.forEach((tab) => {
+//     const option = document.createElement("option");
+//     option.value = tab.innerText;
+//     option.text = tab.innerText;
+//     dropdownList.add(option);
+//   });
 
-  dropdownList.addEventListener("change", () => {
-    moveItemToTab(item, dropdownList.value);
-  });
+//   dropdownList.addEventListener("change", () => {
+//     moveItemToTab(item, dropdownList.value);
+//   });
 
-  return dropdownList;
-}
+//   return dropdownList;
+// }
 function deleteItem(createdAt) {
   console.log("Preparing to delete item with createdAt:", createdAt);
   // Вызываем обе функции
@@ -298,29 +321,23 @@ function removeItemFromUI(createdAt) {
   }
 }
 function removeItemFromLocalStorage(createdAt) {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
-    const indexToRemove = storedList.findIndex(
-      (item) => item.createdAt === createdAt
-    );
+  const indexToRemove = storedItemList.findIndex(
+    (item) => item.createdAt === createdAt
+  );
 
-    if (indexToRemove !== -1) {
-      storedList.splice(indexToRemove, 1);
+  if (indexToRemove !== -1) {
+    storedItemList.splice(indexToRemove, 1);
 
-      chrome.storage.local.set({ yourItemList: storedList }, function () {
-        createAnimatedElement(
-          "Item deleted from local storage successfully",
-          "#71e997"
-        );
-      });
-    } else {
-      createAnimatedElement("Item not found in local storage");
-      console.error(
-        "Item not found in local storage with createdAt:",
-        createdAt
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      createAnimatedElement(
+        "Item deleted from local storage successfully",
+        "#71e997"
       );
-    }
-  });
+    });
+  } else {
+    createAnimatedElement("Item not found in local storage");
+    console.error("Item not found in local storage with createdAt:", createdAt);
+  }
 }
 function editItem(item) {
   const textarea = createTextArea(item.itemData);
@@ -328,7 +345,7 @@ function editItem(item) {
     confirmEdit(item, textarea)
   );
   const cancelButton = createButtons("Cancel", "cancel-button", () =>
-    cancelEdit(item)
+    cancelEdit()
   );
   const content = document.querySelector(
     `[data-created-at="${item.createdAt}"]`
@@ -353,6 +370,21 @@ function hideNshowItem(item) {
       updateItemInLocalStorage(item))
     : updateItemInLocalStorage(item);
 }
+
+// function hideNshowItem(item) {
+//   const itemToHide = getById("listOfItems").querySelector(
+//     `[data-created-at="${item.createdAt}"]`
+//   );
+
+//   if (itemToHide) {
+//     item.hide === true
+//       ? itemToHide.removeChild(itemToHide.firstChild)
+//       : updateItemInLocalStorage(item);
+//   } else {
+//     // ... handle error
+//   }
+// }
+
 function buildDropdownMenu(item) {
   const dropdownMenu = document.createElement("div");
   dropdownMenu.className = "dropdown-menu";
@@ -392,9 +424,10 @@ function createTextArea(content) {
 }
 function confirmEdit(item, textarea) {
   item.itemData = textarea.value;
-
-  // Update content in local storage
   updateItemInLocalStorage(item);
+}
+function cancelEdit() {
+  loadInterface(getCurrentTab());
 }
 function recognitionItems(item) {
   // Create a new element based on the item type
@@ -531,42 +564,28 @@ function createEmptyElement(parentElement) {
   empty.appendChild(document.createTextNode("Empty."));
   parentElement.appendChild(empty);
 }
-function cancelEdit(item) {
-  updateItemInLocalStorage(item);
-}
 function updateItemInLocalStorage(item) {
   console.log("prepare to update local storage with item:", item);
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
 
-    // Find the index of the item in local storage
-    const index = storedList.findIndex(
-      (storedItem) => storedItem.createdAt === item.createdAt
-    );
+  // Find the index of the item in local storage
+  const index = storedItemList.findIndex(
+    (storedItem) => storedItem.createdAt === item.createdAt
+  );
 
-    if (index !== -1) {
-      // Update the item's content
-      storedList[index] = item;
-      console.log(
-        "item in stored storage replaced with new item content",
-        item
-      );
+  if (index !== -1) {
+    // Update the item's content
+    storedItemList[index] = item;
+    console.log("item in stored storage replaced with new item content", item);
 
-      // Save the updated list to local storage
-      chrome.storage.local.set({ yourItemList: storedList }, function () {
-        console.log(
-          "item in local storage replaced with new item content",
-          item
-        );
-        loadInterface(getCurrentTab());
-      });
-    } else {
-      createAnimatedElement(
-        "something went wrong during updating local storage"
-      );
-      console.error("something went wrong during updating local storage");
-    }
-  });
+    // Save the updated list to local storage
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      console.log("item in local storage replaced with new item content", item);
+      loadInterface(getCurrentTab());
+    });
+  } else {
+    createAnimatedElement("something went wrong during updating local storage");
+    console.error("something went wrong during updating local storage");
+  }
 }
 let activeItem = null;
 function createNewItemWithInput() {
@@ -680,15 +699,11 @@ function createAnimatedElement(text, bgColor) {
 async function saveNewItem(item) {
   console.log("saving item");
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get("yourItemList", async function (data) {
-      const storedList = data.yourItemList || [];
+    storedItemList.push(item);
 
-      storedList.push(item);
-
-      chrome.storage.local.set({ yourItemList: storedList }, function () {
-        console.log("Item saved successfully:", item);
-        resolve();
-      });
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      console.log("Item saved successfully:", item);
+      resolve();
     });
   });
 }
@@ -747,8 +762,8 @@ function createNumberedList(number) {
     addNewItem(item);
   });
 }
-infoButton.addEventListener("mouseenter", showInfo);
-infoButton.addEventListener("mouseleave", hideInfo);
+infoButton.addEventListener("mouseenter", () => showInfo());
+infoButton.addEventListener("mouseleave", () => hideInfo());
 clearAllButton.addEventListener("click", clearItemList);
 createItemButton.addEventListener("click", createNewItemWithInput);
 refreshButton.addEventListener("click", () => loadInterface(getCurrentTab()));

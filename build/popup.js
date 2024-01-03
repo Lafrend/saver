@@ -9,83 +9,16 @@
 
 // extracted by mini-css-extract-plugin
 
-/***/ })
+/***/ }),
 
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
+/***/ "./src/popup.js":
 /*!**********************!*\
   !*** ./src/popup.js ***!
   \**********************/
+/***/ ((module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _popup_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./popup.css */ "./src/popup.css");
 /* harmony import */ var _popup_css__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_popup_css__WEBPACK_IMPORTED_MODULE_0__);
@@ -105,6 +38,7 @@ const refreshButton = getById("refreshButton");
 const sendMessage = getById("sendMessage");
 const infoButton = getById("infoButton");
 const create1000 = getById("create1000");
+const conMenu = getById("customContextMenu");
 
 const pinItemsDiv = create("div");
 const notPinItemsDiv = create("div");
@@ -119,46 +53,109 @@ loadingDiv.appendChild(loadingSpan);
 console.log("show loading items");
 document.body.appendChild(loadingDiv);
 
-// document.getElementById("list").addEventListener("contextmenu", function (event) {
-//   event.preventDefault();
+listOfItems.addEventListener("contextmenu", function (event) {
+  const target = event.target;
+  const itemElement = findParentWithClass(target, "item");
+  if (itemElement) {
+    event.preventDefault();
 
-//   const contextMenu = document.getElementById("customContextMenu");
-//   contextMenu.style.left = event.pageX + "px";
-//   contextMenu.style.top = event.pageY + "px";
-//   contextMenu.classList.remove("hidden");
+    const contextMenu = document.getElementById("customContextMenu");
 
-//   // Добавьте обработчики для пунктов меню
-//   document.getElementById("menuItem1").addEventListener("click", function () {
-//     alert("Menu Item 1 clicked!");
-//     contextMenu.classList.add("hidden");
-//   });
+    // Задаем ширину и высоту контекстного меню
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
 
-//   document.getElementById("menuItem2").addEventListener("click", function () {
-//     alert("Menu Item 2 clicked!");
-//     contextMenu.classList.add("hidden");
-//   });
+    // Задаем максимальное расстояние от края страницы, при котором меню будет открываться слева или справа
+    const maxDistanceX = 20;
 
-//   document.getElementById("menuItem3").addEventListener("click", function () {
-//     alert("Menu Item 3 clicked!");
-//     contextMenu.classList.add("hidden");
-//   });
-// });
-// // Скрыть контекстное меню при клике вне его
-// document.addEventListener("click", function () {
-//   const contextMenu = document.getElementById("customContextMenu");
-//   contextMenu.classList.add("hidden");
-// });
-createTabsInHeader();
-loadInterface();
-function loadInterface(tab) {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
+    // Получаем размеры окна браузера
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Вычисляем доступное пространство справа и слева от курсора
+    const spaceRight = windowWidth - event.pageX;
+    const spaceLeft = event.pageX;
+
+    // Определяем, где открывать контекстное меню: справа или слева
+    const openRight = spaceRight >= menuWidth || spaceRight >= spaceLeft;
+
+    // Устанавливаем положение контекстного меню
+    if (openRight) {
+      contextMenu.style.left =
+        Math.min(event.pageX, windowWidth - menuWidth - maxDistanceX) + "px";
+    } else {
+      contextMenu.style.left =
+        Math.max(event.pageX - menuWidth, maxDistanceX) + "px";
+    }
+
+    contextMenu.style.top =
+      Math.min(event.pageY, windowHeight - menuHeight) + "px";
+    contextMenu.classList.remove("hidden");
+
+    // // Добавьте обработчики для пунктов меню
+    // document.getElementById("menuItem1").addEventListener("click", function () {
+    //   alert("Menu Item 1 clicked!");
+    //   contextMenu.classList.add("hidden");
+    // });
+
+    // document.getElementById("menuItem2").addEventListener("click", function () {
+    //   alert("Menu Item 2 clicked!");
+    //   contextMenu.classList.add("hidden");
+    // });
+
+    // document.getElementById("menuItem3").addEventListener("click", function () {
+    //   alert("Menu Item 3 clicked!");
+    //   contextMenu.classList.add("hidden");
+    // });
+  }
+});
+function findParentWithClass(element, className) {
+  // Функция ищет родительский элемент с заданным классом
+  while (element && !element.classList.contains(className)) {
+    element = element.parentElement;
+  }
+  return element;
+}
+// Скрыть контекстное меню при клике вне его
+document.addEventListener("click", function () {
+  const contextMenu = document.getElementById("customContextMenu");
+  contextMenu.classList.add("hidden");
+});
+
+const getLocalStorage = (key) => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, resolve);
+  });
+};
+
+let dLStorage = await getLocalStorage("yourItemList");
+let storedItemList = dLStorage.yourItemList || [];
+dLStorage = null;
+
+async function loadInterface(tab) {
+  try {
     console.log("items in local:", storedItemList);
-    const tabToDisplay = tab ?? "";
+    const tabToDisplay = tab || "";
     console.log("displaying", tabToDisplay);
     displayItems(filterItemsByTab(storedItemList, tabToDisplay));
-  });
+  } catch (error) {
+    console.error(`Error in loadInterface: ${error}`);
+  }
 }
+createTabsInHeader();
+loadInterface();
+
+// listOfItems.addEventListener("click", (event) => {
+//   const target = event.target;
+//   if (target.classList.contains("delete-button")) {
+//     const createdAt = target.closest(".item").dataset.createdAt;
+//     deleteItem(createdAt);
+//   } else if (target.classList.contains("edit-button")) {
+//     editItem(item);
+//   }
+//   // ... add similar checks for other dynamic buttons
+// });
+
 function filterItemsByTab(itemList, tabToDisplay) {
   return tabToDisplay === "" || tabToDisplay === "Main"
     ? itemList
@@ -172,11 +169,7 @@ async function getLocalSize() {
 }
 async function getNumberOfItems() {
   try {
-    const result = await new Promise((resolve) => {
-      chrome.storage.local.get("yourItemList", resolve);
-    });
-    const itemList = result.yourItemList || [];
-    const numberOfItems = itemList.length;
+    const numberOfItems = storedItemList.length;
     return numberOfItems;
   } catch (error) {
     console.error(`Ошибка в getNumberOfItems: ${error}`);
@@ -186,11 +179,13 @@ async function getNumberOfItems() {
 function getCorrectSize(bytes) {
   const sizeUnits = ["B", "KB", "MB"];
   let unitIndex = 0;
+
   while (bytes >= 1024 && unitIndex < sizeUnits.length - 1) {
     bytes /= 1024;
     unitIndex++;
   }
-  return bytes.toFixed(2) + sizeUnits[unitIndex];
+
+  return `${bytes.toFixed(2)} ${sizeUnits[unitIndex]}`;
 }
 window.addEventListener("load", (event) => {
   console.log("removing loading items");
@@ -205,25 +200,22 @@ function displayItems(itemListData) {
   });
 }
 function createTabsInHeader() {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedItemList = data.yourItemList || [];
-    const uniqueTabs = Array.from(
-      new Set(storedItemList.map((item) => item.tab))
-    );
-    const tabsToDisplay = [
-      "Main",
-      "Fav",
-      ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
-    ];
-    const tabList = document.getElementById("tab-list");
-    tabList.innerHTML = "";
+  const uniqueTabs = Array.from(
+    new Set(storedItemList.map((item) => item.tab))
+  );
+  const tabsToDisplay = [
+    "Main",
+    "Fav",
+    ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
+  ];
+  const tabList = document.getElementById("tab-list");
+  tabList.innerHTML = "";
 
-    tabsToDisplay.forEach((tabName) => {
-      const tabElement = createTabElement(tabName);
-      tabList.appendChild(tabElement);
-    });
-    highlightActiveTab("Main");
+  tabsToDisplay.forEach((tabName) => {
+    const tabElement = createTabElement(tabName);
+    tabList.appendChild(tabElement);
   });
+  highlightActiveTab("Main");
 }
 function createTabElement(tabName) {
   const tabElement = document.createElement("div");
@@ -286,7 +278,7 @@ function addNewItem(item) {
     deleteButton,
     pinButton,
     hideButton,
-    moveButton,
+    moveButton
     //moveDropdownList,
   );
 
@@ -307,29 +299,29 @@ function createButtons(label, className, clickHandler) {
   button.addEventListener("click", clickHandler);
   return button;
 }
-function createDropdownList(item) {
-  const dropdownList = document.createElement("select");
-  dropdownList.className = "dropdown-list";
+// function createDropdownList(item) {
+//   const dropdownList = document.createElement("select");
+//   dropdownList.className = "dropdown-list";
 
-  const defaultOption = document.createElement("option");
-  defaultOption.text = "Move to...";
-  defaultOption.value = "";
-  dropdownList.add(defaultOption);
+//   const defaultOption = document.createElement("option");
+//   defaultOption.text = "Move to...";
+//   defaultOption.value = "";
+//   dropdownList.add(defaultOption);
 
-  const tabList = document.getElementById("tab-list");
-  tabList.childNodes.forEach((tab) => {
-    const option = document.createElement("option");
-    option.value = tab.innerText;
-    option.text = tab.innerText;
-    dropdownList.add(option);
-  });
+//   const tabList = document.getElementById("tab-list");
+//   tabList.childNodes.forEach((tab) => {
+//     const option = document.createElement("option");
+//     option.value = tab.innerText;
+//     option.text = tab.innerText;
+//     dropdownList.add(option);
+//   });
 
-  dropdownList.addEventListener("change", () => {
-    moveItemToTab(item, dropdownList.value);
-  });
+//   dropdownList.addEventListener("change", () => {
+//     moveItemToTab(item, dropdownList.value);
+//   });
 
-  return dropdownList;
-}
+//   return dropdownList;
+// }
 function deleteItem(createdAt) {
   console.log("Preparing to delete item with createdAt:", createdAt);
   // Вызываем обе функции
@@ -353,29 +345,23 @@ function removeItemFromUI(createdAt) {
   }
 }
 function removeItemFromLocalStorage(createdAt) {
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
-    const indexToRemove = storedList.findIndex(
-      (item) => item.createdAt === createdAt
-    );
+  const indexToRemove = storedItemList.findIndex(
+    (item) => item.createdAt === createdAt
+  );
 
-    if (indexToRemove !== -1) {
-      storedList.splice(indexToRemove, 1);
+  if (indexToRemove !== -1) {
+    storedItemList.splice(indexToRemove, 1);
 
-      chrome.storage.local.set({ yourItemList: storedList }, function () {
-        createAnimatedElement(
-          "Item deleted from local storage successfully",
-          "#71e997"
-        );
-      });
-    } else {
-      createAnimatedElement("Item not found in local storage");
-      console.error(
-        "Item not found in local storage with createdAt:",
-        createdAt
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      createAnimatedElement(
+        "Item deleted from local storage successfully",
+        "#71e997"
       );
-    }
-  });
+    });
+  } else {
+    createAnimatedElement("Item not found in local storage");
+    console.error("Item not found in local storage with createdAt:", createdAt);
+  }
 }
 function editItem(item) {
   const textarea = createTextArea(item.itemData);
@@ -383,7 +369,7 @@ function editItem(item) {
     confirmEdit(item, textarea)
   );
   const cancelButton = createButtons("Cancel", "cancel-button", () =>
-    cancelEdit(item)
+    cancelEdit()
   );
   const content = document.querySelector(
     `[data-created-at="${item.createdAt}"]`
@@ -408,6 +394,21 @@ function hideNshowItem(item) {
       updateItemInLocalStorage(item))
     : updateItemInLocalStorage(item);
 }
+
+// function hideNshowItem(item) {
+//   const itemToHide = getById("listOfItems").querySelector(
+//     `[data-created-at="${item.createdAt}"]`
+//   );
+
+//   if (itemToHide) {
+//     item.hide === true
+//       ? itemToHide.removeChild(itemToHide.firstChild)
+//       : updateItemInLocalStorage(item);
+//   } else {
+//     // ... handle error
+//   }
+// }
+
 function buildDropdownMenu(item) {
   const dropdownMenu = document.createElement("div");
   dropdownMenu.className = "dropdown-menu";
@@ -447,9 +448,10 @@ function createTextArea(content) {
 }
 function confirmEdit(item, textarea) {
   item.itemData = textarea.value;
-
-  // Update content in local storage
   updateItemInLocalStorage(item);
+}
+function cancelEdit() {
+  loadInterface(getCurrentTab());
 }
 function recognitionItems(item) {
   // Create a new element based on the item type
@@ -586,42 +588,28 @@ function createEmptyElement(parentElement) {
   empty.appendChild(document.createTextNode("Empty."));
   parentElement.appendChild(empty);
 }
-function cancelEdit(item) {
-  updateItemInLocalStorage(item);
-}
 function updateItemInLocalStorage(item) {
   console.log("prepare to update local storage with item:", item);
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
 
-    // Find the index of the item in local storage
-    const index = storedList.findIndex(
-      (storedItem) => storedItem.createdAt === item.createdAt
-    );
+  // Find the index of the item in local storage
+  const index = storedItemList.findIndex(
+    (storedItem) => storedItem.createdAt === item.createdAt
+  );
 
-    if (index !== -1) {
-      // Update the item's content
-      storedList[index] = item;
-      console.log(
-        "item in stored storage replaced with new item content",
-        item
-      );
+  if (index !== -1) {
+    // Update the item's content
+    storedItemList[index] = item;
+    console.log("item in stored storage replaced with new item content", item);
 
-      // Save the updated list to local storage
-      chrome.storage.local.set({ yourItemList: storedList }, function () {
-        console.log(
-          "item in local storage replaced with new item content",
-          item
-        );
-        loadInterface(getCurrentTab());
-      });
-    } else {
-      createAnimatedElement(
-        "something went wrong during updating local storage"
-      );
-      console.error("something went wrong during updating local storage");
-    }
-  });
+    // Save the updated list to local storage
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      console.log("item in local storage replaced with new item content", item);
+      loadInterface(getCurrentTab());
+    });
+  } else {
+    createAnimatedElement("something went wrong during updating local storage");
+    console.error("something went wrong during updating local storage");
+  }
 }
 let activeItem = null;
 function createNewItemWithInput() {
@@ -732,18 +720,14 @@ function createAnimatedElement(text, bgColor) {
   // Удаляем элемент через 2.5 секунды
   setTimeout(() => element.remove(), 2500);
 }
-function saveNewItem(item) {
+async function saveNewItem(item) {
   console.log("saving item");
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get("yourItemList", function (data) {
-      const storedList = data.yourItemList || [];
+    storedItemList.push(item);
 
-      storedList.push(item);
-
-      chrome.storage.local.set({ yourItemList: storedList }, function () {
-        console.log("Item saved successfully:", item);
-        resolve();
-      });
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      console.log("Item saved successfully:", item);
+      resolve();
     });
   });
 }
@@ -802,8 +786,8 @@ function createNumberedList(number) {
     addNewItem(item);
   });
 }
-infoButton.addEventListener("mouseenter", showInfo);
-infoButton.addEventListener("mouseleave", hideInfo);
+infoButton.addEventListener("mouseenter", () => showInfo());
+infoButton.addEventListener("mouseleave", () => hideInfo());
 clearAllButton.addEventListener("click", clearItemList);
 createItemButton.addEventListener("click", createNewItemWithInput);
 refreshButton.addEventListener("click", () => loadInterface(getCurrentTab()));
@@ -812,8 +796,154 @@ sendMessage.addEventListener("click", () =>
 );
 create1000.addEventListener("click", () => createNumberedList(1000));
 
-})();
+__webpack_async_result__();
+} catch(e) { __webpack_async_result__(e); } }, 1);
 
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/async module */
+/******/ 	(() => {
+/******/ 		var webpackQueues = typeof Symbol === "function" ? Symbol("webpack queues") : "__webpack_queues__";
+/******/ 		var webpackExports = typeof Symbol === "function" ? Symbol("webpack exports") : "__webpack_exports__";
+/******/ 		var webpackError = typeof Symbol === "function" ? Symbol("webpack error") : "__webpack_error__";
+/******/ 		var resolveQueue = (queue) => {
+/******/ 			if(queue && queue.d < 1) {
+/******/ 				queue.d = 1;
+/******/ 				queue.forEach((fn) => (fn.r--));
+/******/ 				queue.forEach((fn) => (fn.r-- ? fn.r++ : fn()));
+/******/ 			}
+/******/ 		}
+/******/ 		var wrapDeps = (deps) => (deps.map((dep) => {
+/******/ 			if(dep !== null && typeof dep === "object") {
+/******/ 				if(dep[webpackQueues]) return dep;
+/******/ 				if(dep.then) {
+/******/ 					var queue = [];
+/******/ 					queue.d = 0;
+/******/ 					dep.then((r) => {
+/******/ 						obj[webpackExports] = r;
+/******/ 						resolveQueue(queue);
+/******/ 					}, (e) => {
+/******/ 						obj[webpackError] = e;
+/******/ 						resolveQueue(queue);
+/******/ 					});
+/******/ 					var obj = {};
+/******/ 					obj[webpackQueues] = (fn) => (fn(queue));
+/******/ 					return obj;
+/******/ 				}
+/******/ 			}
+/******/ 			var ret = {};
+/******/ 			ret[webpackQueues] = x => {};
+/******/ 			ret[webpackExports] = dep;
+/******/ 			return ret;
+/******/ 		}));
+/******/ 		__webpack_require__.a = (module, body, hasAwait) => {
+/******/ 			var queue;
+/******/ 			hasAwait && ((queue = []).d = -1);
+/******/ 			var depQueues = new Set();
+/******/ 			var exports = module.exports;
+/******/ 			var currentDeps;
+/******/ 			var outerResolve;
+/******/ 			var reject;
+/******/ 			var promise = new Promise((resolve, rej) => {
+/******/ 				reject = rej;
+/******/ 				outerResolve = resolve;
+/******/ 			});
+/******/ 			promise[webpackExports] = exports;
+/******/ 			promise[webpackQueues] = (fn) => (queue && fn(queue), depQueues.forEach(fn), promise["catch"](x => {}));
+/******/ 			module.exports = promise;
+/******/ 			body((deps) => {
+/******/ 				currentDeps = wrapDeps(deps);
+/******/ 				var fn;
+/******/ 				var getResult = () => (currentDeps.map((d) => {
+/******/ 					if(d[webpackError]) throw d[webpackError];
+/******/ 					return d[webpackExports];
+/******/ 				}))
+/******/ 				var promise = new Promise((resolve) => {
+/******/ 					fn = () => (resolve(getResult));
+/******/ 					fn.r = 0;
+/******/ 					var fnQueue = (q) => (q !== queue && !depQueues.has(q) && (depQueues.add(q), q && !q.d && (fn.r++, q.push(fn))));
+/******/ 					currentDeps.map((dep) => (dep[webpackQueues](fnQueue)));
+/******/ 				});
+/******/ 				return fn.r ? promise : getResult();
+/******/ 			}, (err) => ((err ? reject(promise[webpackError] = err) : outerResolve(exports)), resolveQueue(queue)));
+/******/ 			queue && queue.d < 0 && (queue.d = 0);
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module used 'module' so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/popup.js");
+/******/ 	
 /******/ })()
 ;
 //# sourceMappingURL=popup.js.map
