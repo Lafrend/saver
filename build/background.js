@@ -7,17 +7,6 @@ var __webpack_exports__ = {};
   \***************************/
 
 
-// Load stored data on extension open
-chrome.runtime.onInstalled.addListener(function () {
-  loadItems();
-});
-function loadItems() {
-  // Load stored data on extension open
-  chrome.storage.local.get("yourItemList", function (data) {
-    const storedList = data.yourItemList || [];
-    console.log("Loaded items:", storedList);
-  });
-}
 chrome.runtime.onInstalled.addListener(function () {
   // Add a context menu item for selected text
   chrome.contextMenus.create({
@@ -34,107 +23,12 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
         const activeTab = tabs[0];
         chrome.tabs.sendMessage(activeTab.id, { command: "processImage", imageUrl: selected });
         console.log("Send message to content with imgurl:", selected);
-        // compressAndSaveImage(activeTab.id, selected);
       });
     } else {
       saveItem(info);
     }
   }
 });
-// function compressAndSaveImage(tabId, imageUrl) {
-//   const MAX_WIDTH = 400; // Максимальная ширина
-
-//   // Загружаем изображение
-//   const img = new Image();
-//   img.crossOrigin = "Anonymous";
-//   img.onload = function () {
-//     const canvas = document.createElement("canvas");
-//     const scaleFactor = MAX_WIDTH / img.width;
-//     canvas.width = MAX_WIDTH;
-//     canvas.height = img.height * scaleFactor;
-
-//     const ctx = canvas.getContext("2d");
-
-//     // Рисуем изображение на canvas с измененными размерами
-//     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-//     // Получаем сжатое изображение в формате base64
-//     const compressedImageBase64 = canvas.toDataURL("image/jpeg", 0.7); // Измените формат и качество при необходимости
-
-//     // Отправляем сжатое изображение в контент-скрипт
-//     chrome.tabs.sendMessage(tabId, {
-//       command: "imageProcessed",
-//       formattedText: compressedImageBase64,
-//     });
-//     console.log("Compressed and sent image:", compressedImageBase64);
-
-//     const compressedItem = {
-//       createdAt: new Date().getTime(),
-//       title: "",
-//       itemData: compressedImageBase64,
-//       pinned: false,
-//       hide: false,
-//       fav: false,
-//       color: "",
-//       tab: "",
-//       list: "compressedImages", // Указываем список для сжатых изображений
-//     };
-
-//     saveNewItem(compressedItem);
-//   };
-//   img.src = imageUrl;
-// }
-
-// function compressAndSaveImage(tabId, imageUrl) {
-//   const MAX_WIDTH = 400; // Максимальная ширина
-
-//   // Загружаем изображение
-//   const img = new Image();
-//   img.crossOrigin = "Anonymous";
-//   img.onload = function () {
-//     const canvas = document.createElement("canvas");
-//     const scaleFactor = MAX_WIDTH / img.width;
-//     canvas.width = MAX_WIDTH;
-//     canvas.height = img.height * scaleFactor;
-
-//     const ctx = canvas.getContext("2d");
-
-//     // Рисуем изображение на canvas с измененными размерами
-//     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-//     // Получаем сжатое изображение в формате base64
-//     canvas.toBlob(function (blob) {
-//       pica.resize(blob, canvas, { quality: 3 }, function (result) {
-//         const compressedImageBase64 = result.toDataURL("image/jpeg");
-
-//         // Отправляем сжатое изображение в контент-скрипт
-//         chrome.tabs.sendMessage(tabId, {
-//           command: "imageProcessed",
-//           formattedText: compressedImageBase64,
-//         });
-//         console.log("Compressed and sent image:", compressedImageBase64);
-
-//         const compressedItem = {
-//           createdAt: new Date().getTime(),
-//           title: "",
-//           itemData: compressedImageBase64,
-//           pinned: false,
-//           hide: false,
-//           fav: false,
-//           color: "",
-//           tab: "",
-//           list: "compressedImages", // Указываем список для сжатых изображений
-//         };
-
-//         saveNewItem(compressedItem);
-//       });
-//     }, "image/jpeg", 0.7); // Измените формат и качество при необходимости
-//   };
-//   img.src = imageUrl;
-// }
-
-
-// Используем chrome.commands.onCommand для обработки горячих клавиш
 chrome.commands.onCommand.addListener(function (command) {
   if (command === "saveItemCommand") {
     // Отправляем сообщение контент-скрипту с запросом выделенного текста
@@ -144,7 +38,6 @@ chrome.commands.onCommand.addListener(function (command) {
     });
   }
 });
-// Обработчик сообщений от контент-скрипта
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.command === "saveItem" && request.selectedText) {
     // Создаем новый элемент с выделенным текстом
@@ -172,45 +65,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     saveNewItem(newItem);
   }
 });
-// const SERVER_URL = 'http://localhost:3000'; // Замените на ваш домен и порт
-
-// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-//   if (request.command === "processImage" && request.imageUrl) {
-//     const imageUrl = request.imageUrl;
-
-//     // Отправляем запрос на наш сервер, чтобы получить изображение
-//     fetch(`${SERVER_URL}/getImage?url=${imageUrl}`)
-//       .then(response => response.blob())
-//       .then(blob => {
-//         // Преобразуем Blob в Data URL
-//         const reader = new FileReader();
-//         reader.onloadend = function () {
-//           const dataUrl = reader.result;
-
-//           // Отправляем текст в content.js
-//           chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-//             const activeTab = tabs[0];
-//             chrome.tabs.sendMessage(activeTab.id, { command: "imageProcessed", formattedText: dataUrl });
-//           });
-//         };
-//         reader.readAsDataURL(blob);
-//       })
-//       .catch(error => {
-//         console.error('Ошибка при обработке изображения:', error);
-//       });
-//   }
-// });
-
-// // Добавьте этот код после вашего существующего кода
-// chrome.contextMenus.onClicked.addListener(function (info, tab) {
-//   if (info.menuItemId == "save") {
-//     // Извлекаем URL изображения со страницы
-//     const imageUrl = info.srcUrl;
-
-//     // Отправляем команду на обработку изображения в background.js
-//     chrome.runtime.sendMessage({ command: "processImage", imageUrl: imageUrl });
-//   }
-// });
 function saveItem(info) {
   const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
 
@@ -235,32 +89,25 @@ function formatImageAsText(imageUrl) {
   return new Promise((resolve, reject) => {
     // Создаем изображение
     const img = document.createElement("img");
-
     // Обработчик, вызываемый после загрузки изображения
     img.onload = function () {
       // Создаем элемент canvas для рисования изображения
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
-
       // Получаем контекст для рисования
       const context = canvas.getContext("2d");
-
       // Рисуем изображение на canvas
       context.drawImage(img, 0, 0);
-
       // Получаем Base64-код изображения
       const imageBase64 = canvas.toDataURL("image/png");
-
       // Разрешаем обещание с Base64-кодом
       resolve(imageBase64);
     };
-
     // Обработчик ошибки загрузки изображения
     img.onerror = function () {
       reject(new Error("Ошибка загрузки изображения"));
     };
-
     // Устанавливаем URL изображения
     img.crossOrigin = "anonymous"; // Разрешаем использование изображений с другого домена
     img.src = imageUrl;
@@ -276,17 +123,14 @@ function saveNewItem(item) {
   console.log("Saving new item:", item);
   chrome.storage.local.get("yourItemList", function (data) {
     const storedList = data.yourItemList || [];
-
-    // Check if the item with the same createdAt already exists
-    const existingItemIndex = storedList.findIndex(
-      (existingItem) => existingItem.createdAt === item.createdAt
-    );
-
-    if (existingItemIndex !== -1) {
-      // If the item with the same createdAt exists, remove it from the list
-      storedList.splice(existingItemIndex, 1);
-    }
-
+    // // Check if the item with the same createdAt already exists
+    // const existingItemIndex = storedList.findIndex(
+    //   (existingItem) => existingItem.createdAt === item.createdAt
+    // );
+    // if (existingItemIndex !== -1) {
+    //   // If the item with the same createdAt exists, remove it from the list
+    //   storedList.splice(existingItemIndex, 1);
+    // }
     // Add the new item to the beginning of the list
     storedList.push(item);
 

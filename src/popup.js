@@ -5,100 +5,99 @@ import "./popup.css";
 console.log("This is a popup!");
 
 const getById = (id) => document.getElementById(id);
-const create = (tag) => document.createElement(tag);
 
-const listOfItems = getById("listOfItems");
-const clearAllButton = getById("clearAllButton");
-const createItemButton = getById("createItemButton");
-const refreshButton = getById("refreshButton");
-const sendMessage = getById("sendMessage");
-const infoButton = getById("infoButton");
-const create1000 = getById("create1000");
-const conMenu = getById("customContextMenu");
+const listOfItems = getById("listOfItems"),
+  clearAllButton = getById("clearAllButton"),
+  createItemButton = getById("createItemButton"),
+  refreshButton = getById("refreshButton"),
+  sendMessage = getById("sendMessage"),
+  infoButton = getById("infoButton"),
+  create1000 = getById("create1000"),
+  conMenu = getById("customContextMenu"),
+  pinItemsDiv = createElement("div"),
+  notPinItemsDiv = createElement("div"),
+  loadingDiv = createElement("div"),
+  loadingSpan = createElement("span");
 
-const pinItemsDiv = create("div");
-const notPinItemsDiv = create("div");
 pinItemsDiv.className = "pin-items-div";
 notPinItemsDiv.className = "not-pin-items-div";
-
-const loadingDiv = create("div");
-const loadingSpan = create("span");
 loadingDiv.className = "loading-div";
 loadingSpan.textContent = "Loading...";
+
 loadingDiv.appendChild(loadingSpan);
 console.log("show loading items");
 document.body.appendChild(loadingDiv);
 
-listOfItems.addEventListener("contextmenu", function (event) {
-  const target = event.target;
-  const itemElement = findParentWithClass(target, "item");
-  if (itemElement) {
-    event.preventDefault();
+// listOfItems.addEventListener("contextmenu", function (event) {
+//   const target = event.target;
+//   const itemElement = findParentWithClass(target, "item");
+//   if (itemElement) {
+//     event.preventDefault();
 
-    const contextMenu = document.getElementById("customContextMenu");
+//     const contextMenu = document.getElementById("customContextMenu");
 
-    // Задаем ширину и высоту контекстного меню
-    const menuWidth = contextMenu.offsetWidth;
-    const menuHeight = contextMenu.offsetHeight;
+//     // Задаем ширину и высоту контекстного меню
+//     const menuWidth = contextMenu.offsetWidth;
+//     const menuHeight = contextMenu.offsetHeight;
 
-    // Задаем максимальное расстояние от края страницы, при котором меню будет открываться слева или справа
-    const maxDistanceX = 20;
+//     // Задаем максимальное расстояние от края страницы, при котором меню будет открываться слева или справа
+//     const maxDistanceX = 20;
 
-    // Получаем размеры окна браузера
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
+//     // Получаем размеры окна браузера
+//     const windowWidth = window.innerWidth;
+//     const windowHeight = window.innerHeight;
 
-    // Вычисляем доступное пространство справа и слева от курсора
-    const spaceRight = windowWidth - event.pageX;
-    const spaceLeft = event.pageX;
+//     // Вычисляем доступное пространство справа и слева от курсора
+//     const spaceRight = windowWidth - event.pageX;
+//     const spaceLeft = event.pageX;
 
-    // Определяем, где открывать контекстное меню: справа или слева
-    const openRight = spaceRight >= menuWidth || spaceRight >= spaceLeft;
+//     // Определяем, где открывать контекстное меню: справа или слева
+//     const openRight = spaceRight >= menuWidth || spaceRight >= spaceLeft;
 
-    // Устанавливаем положение контекстного меню
-    if (openRight) {
-      contextMenu.style.left =
-        Math.min(event.pageX, windowWidth - menuWidth - maxDistanceX) + "px";
-    } else {
-      contextMenu.style.left =
-        Math.max(event.pageX - menuWidth, maxDistanceX) + "px";
-    }
+//     // Устанавливаем положение контекстного меню
+//     if (openRight) {
+//       contextMenu.style.left =
+//         Math.min(event.pageX, windowWidth - menuWidth - maxDistanceX) + "px";
+//     } else {
+//       contextMenu.style.left =
+//         Math.max(event.pageX - menuWidth, maxDistanceX) + "px";
+//     }
 
-    contextMenu.style.top =
-      Math.min(event.pageY, windowHeight - menuHeight) + "px";
-    contextMenu.classList.remove("hidden");
+//     contextMenu.style.top =
+//       Math.min(event.pageY, windowHeight - menuHeight) + "px";
+//     contextMenu.classList.remove("hidden");
 
-    // // Добавьте обработчики для пунктов меню
-    // document.getElementById("menuItem1").addEventListener("click", function () {
-    //   alert("Menu Item 1 clicked!");
-    //   contextMenu.classList.add("hidden");
-    // });
+//     // // Добавьте обработчики для пунктов меню
+//     // document.getElementById("menuItem1").addEventListener("click", function () {
+//     //   alert("Menu Item 1 clicked!");
+//     //   contextMenu.classList.add("hidden");
+//     // });
 
-    // document.getElementById("menuItem2").addEventListener("click", function () {
-    //   alert("Menu Item 2 clicked!");
-    //   contextMenu.classList.add("hidden");
-    // });
+//     // document.getElementById("menuItem2").addEventListener("click", function () {
+//     //   alert("Menu Item 2 clicked!");
+//     //   contextMenu.classList.add("hidden");
+//     // });
 
-    // document.getElementById("menuItem3").addEventListener("click", function () {
-    //   alert("Menu Item 3 clicked!");
-    //   contextMenu.classList.add("hidden");
-    // });
-  }
-});
-function findParentWithClass(element, className) {
-  // Функция ищет родительский элемент с заданным классом
-  while (element && !element.classList.contains(className)) {
-    element = element.parentElement;
-  }
-  return element;
-}
-// Скрыть контекстное меню при клике вне его
-document.addEventListener("click", function () {
-  const contextMenu = document.getElementById("customContextMenu");
-  contextMenu.classList.add("hidden");
-});
+//     // document.getElementById("menuItem3").addEventListener("click", function () {
+//     //   alert("Menu Item 3 clicked!");
+//     //   contextMenu.classList.add("hidden");
+//     // });
+//   }
+// });
+// function findParentWithClass(element, className) {
+//   // Функция ищет родительский элемент с заданным классом
+//   while (element && !element.classList.contains(className)) {
+//     element = element.parentElement;
+//   }
+//   return element;
+// }
+// // Скрыть контекстное меню при клике вне его
+// document.addEventListener("click", function () {
+//   const contextMenu = document.getElementById("customContextMenu");
+//   contextMenu.classList.add("hidden");
+// });
 
-const getLocalStorage = (key) => {
+const getLocalStorage = async (key) => {
   return new Promise((resolve) => {
     chrome.storage.local.get(key, resolve);
   });
@@ -106,11 +105,11 @@ const getLocalStorage = (key) => {
 
 let dLStorage = await getLocalStorage("yourItemList");
 let storedItemList = dLStorage.yourItemList || [];
+console.log("Loaded items:", storedItemList);
 dLStorage = null;
 
 async function loadInterface(tab) {
   try {
-    console.log("items in local:", storedItemList);
     const tabToDisplay = tab || "";
     console.log("displaying", tabToDisplay);
     displayItems(filterItemsByTab(storedItemList, tabToDisplay));
@@ -137,13 +136,13 @@ function filterItemsByTab(itemList, tabToDisplay) {
     ? itemList
     : itemList.filter((item) => item.tab === tabToDisplay);
 }
-async function getLocalSize() {
+const getLocalSize = async () => {
   const bytesInUse = await new Promise((resolve) => {
     chrome.storage.local.getBytesInUse("yourItemList", resolve);
   });
-  return getCorrectSize(bytesInUse);
-}
-async function getNumberOfItems() {
+  return await getCorrectSize(bytesInUse);
+};
+const getNumberOfItems = async () => {
   try {
     const numberOfItems = storedItemList.length;
     return numberOfItems;
@@ -152,7 +151,7 @@ async function getNumberOfItems() {
     return 0;
   }
 }
-function getCorrectSize(bytes) {
+const getCorrectSize = async (bytes) => {
   const sizeUnits = ["B", "KB", "MB"];
   let unitIndex = 0;
 
@@ -171,9 +170,7 @@ function displayItems(itemListData) {
   console.log("displaying loaded items", itemListData);
   pinItemsDiv.innerHTML = "";
   notPinItemsDiv.innerHTML = "";
-  itemListData.forEach(function (item) {
-    addNewItem(item);
-  });
+  itemListData.map((item) => addNewItem(item));
 }
 function createTabsInHeader() {
   const uniqueTabs = Array.from(
@@ -211,8 +208,8 @@ function highlightActiveTab(activeTab) {
   });
 }
 function addNewItem(item) {
-  const notPinnedItem = createItemElement("item");
-  const pinnedItem = createItemElement("pin item");
+  const notPinnedItem = createElement("div", "item");
+  const pinnedItem = createElement("div", "pin item");
 
   const itemContent = item.hide
     ? item.hide === false
@@ -220,16 +217,16 @@ function addNewItem(item) {
       : ""
     : recognitionItems(item);
 
-  const editButton = createButtons("Edit", "edit-button", () => editItem(item));
-  const deleteButton = createButtons("Delete", "delete-button", () =>
+  const editButton = createButton("Edit", "edit-button", () => editItem(item));
+  const deleteButton = createButton("Delete", "delete-button", () =>
     deleteItem(item.createdAt)
   );
-  const pinButton = createButtons(
+  const pinButton = createButton(
     item.pinned ? "Unpin" : "Pin",
     "pin-unpin-button",
     () => pinItem(item)
   );
-  const hideButton = createButtons(
+  const hideButton = createButton(
     item.hide ? "Show" : "Hide",
     "hide-n-show-button",
     () => hideNshowItem(item)
@@ -237,7 +234,7 @@ function addNewItem(item) {
 
   // const moveDropdownList = createDropdownList(item);
   // moveDropdownList.className = "move-dropdown-list";
-  const moveButton = createButtons("Move", "move-button", () => {
+  const moveButton = createButton("Move", "move-button", () => {
     moveButton.appendChild(buildDropdownMenu(item));
   });
 
@@ -262,14 +259,13 @@ function addNewItem(item) {
 
   listOfItems.append(pinItemsDiv, notPinItemsDiv);
 }
-function createItemElement(className) {
-  const itemElement = document.createElement("div");
-  itemElement.className = className;
-  return itemElement;
+function createElement(tag, className) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  return element;
 }
-function createButtons(label, className, clickHandler) {
-  const button = document.createElement("button");
-  button.className = className;
+function createButton(label, className, clickHandler) {
+  const button = createElement('button', className);
   button.innerText = label;
   button.type = "button";
   button.addEventListener("click", clickHandler);
@@ -341,10 +337,10 @@ function removeItemFromLocalStorage(createdAt) {
 }
 function editItem(item) {
   const textarea = createTextArea(item.itemData);
-  const confirmButton = createButtons("Confirm", "confirm-button", () =>
+  const confirmButton = createButton("Confirm", "confirm-button", () =>
     confirmEdit(item, textarea)
   );
-  const cancelButton = createButtons("Cancel", "cancel-button", () =>
+  const cancelButton = createButton("Cancel", "cancel-button", () =>
     cancelEdit()
   );
   const content = document.querySelector(
@@ -386,12 +382,11 @@ function hideNshowItem(item) {
 // }
 
 function buildDropdownMenu(item) {
-  const dropdownMenu = document.createElement("div");
-  dropdownMenu.className = "dropdown-menu";
+  const dropdownMenu = createElement("div", "dropdown-menu");
 
   const tabList = document.getElementById("tab-list");
   tabList.childNodes.forEach((tab) => {
-    const tabElement = document.createElement("div");
+    const tabElement = createElement("div");
     tabElement.innerText = tab.innerText;
     tabElement.addEventListener("click", () => {
       moveItemToTab(item, tabElement.innerText);
@@ -599,10 +594,9 @@ function createNewItemWithInput() {
   const textArea = createTextArea("");
   textArea.placeholder = "Введите текст...";
 
-  const div = document.createElement("div");
-  div.className = "item";
+  const div = document.createElement("div", "item");
 
-  const confirmButton = createButtons("Confirm", "confirm-button", function () {
+  const confirmButton = createButton("Confirm", "confirm-button", function () {
     const text = textArea.value;
     if (text !== "") {
       const newItem = {
@@ -631,7 +625,7 @@ function createNewItemWithInput() {
     }
   });
 
-  const cancelButton = createButtons("Cancel", "cancel-button", function () {
+  const cancelButton = createButton("Cancel", "cancel-button", function () {
     div.remove();
   });
   div.append(textArea, confirmButton, cancelButton);
@@ -666,8 +660,7 @@ function createAnimatedElement(text, bgColor) {
     );
   });
 
-  const element = document.createElement("div");
-  element.className = "animated-element";
+  const element = document.createElement("div", "animated-element");
   element.style.backgroundColor = bgColor || "#db3232";
   element.style.bottom = "45px";
 
