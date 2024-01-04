@@ -10,11 +10,15 @@ chrome.runtime.onInstalled.addListener(function () {
 });
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
   if (info.menuItemId == "save") {
-    const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
-    if(isImage(selected)) {
+    const selected =
+      info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
+    if (isImage(selected)) {
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         const activeTab = tabs[0];
-        chrome.tabs.sendMessage(activeTab.id, { command: "processImage", imageUrl: selected });
+        chrome.tabs.sendMessage(activeTab.id, {
+          command: "processImage",
+          imageUrl: selected,
+        });
         console.log("Send message to content with imgurl:", selected);
       });
     } else {
@@ -59,7 +63,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 function saveItem(info) {
-  const selected = info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
+  const selected =
+    info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
 
   let itemData;
   itemData = selected;
@@ -106,25 +111,59 @@ function formatImageAsText(imageUrl) {
     img.src = imageUrl;
   });
 }
+
 function isImage(url) {
   // Простая проверка расширения URL на изображение
   return url.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null;
 }
+
+function sendToServer(data) {
+  const serverEndpoint = "http://localhost:3000/sendToTelegram";
+
+  try {
+    // Проверяем, что data - это строка
+    if (typeof data !== 'string') {
+      throw new Error('Invalid data format. It should be a string.');
+    }
+
+    // Отправляем строку на сервер
+    fetch(serverEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain', // Используем text/plain для строки
+      },
+      body: data,
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(responseData => {
+      if (responseData) {
+        console.log('Данные успешно отправлены:', responseData);
+      } else {
+        console.error('Ответ сервера не содержит данных:', responseData);
+      }
+    })
+    .catch(error => {
+      console.error('Ошибка отправки данных на сервер:', error.message);
+    });
+  } catch (error) {
+    console.error('Ошибка форматирования данных:', error.message);
+  }
+}
+
 function saveNewItem(item) {
   // Add your logic to save the item to your list using chrome.storage.local
   // Modify this function according to your storage requirements
+
+  sendToServer(item.itemData);
+
   console.log("Saving new item:", item);
   chrome.storage.local.get("yourItemList", function (data) {
     const storedList = data.yourItemList || [];
-    // // Check if the item with the same createdAt already exists
-    // const existingItemIndex = storedList.findIndex(
-    //   (existingItem) => existingItem.createdAt === item.createdAt
-    // );
-    // if (existingItemIndex !== -1) {
-    //   // If the item with the same createdAt exists, remove it from the list
-    //   storedList.splice(existingItemIndex, 1);
-    // }
-    // Add the new item to the beginning of the list
     storedList.push(item);
 
     chrome.storage.local.set({ yourItemList: storedList }, function () {
@@ -132,3 +171,12 @@ function saveNewItem(item) {
     });
   });
 }
+
+// function saveNewItemWithImage(item, imageUrl) {
+//   // ... ваш текущий код сохранения ...
+
+//   // Форматируем изображение и отправляем данные на сервер
+//   formatImageAsText(imageUrl)
+//     .then((imageBase64) => sendToServer(null, imageBase64))
+//     .catch((error) => console.error("Error formatting image:", error));
+// }

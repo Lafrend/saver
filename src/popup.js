@@ -2,6 +2,22 @@
 
 import "./popup.css";
 
+const getLocalStorage = async (key) => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(key, resolve);
+  });
+};
+
+let dLStorage = await getLocalStorage("yourItemList");
+let storedItemList = dLStorage.yourItemList || [];
+console.log("Loaded items:", storedItemList);
+dLStorage = null;
+
+// import "./loadnshowelements";
+// import "./mainModule";
+// import "./mainfunctional";
+// import "./storageModule";
+
 console.log("This is a popup!");
 
 const getById = (id) => document.getElementById(id);
@@ -14,10 +30,10 @@ const listOfItems = getById("listOfItems"),
   infoButton = getById("infoButton"),
   create1000 = getById("create1000"),
   conMenu = getById("customContextMenu"),
-  pinItemsDiv = createElement("div"),
-  notPinItemsDiv = createElement("div"),
-  loadingDiv = createElement("div"),
-  loadingSpan = createElement("span");
+  pinItemsDiv = createElements("div"),
+  notPinItemsDiv = createElements("div"),
+  loadingDiv = createElements("div"),
+  loadingSpan = createElements("span");
 
 pinItemsDiv.className = "pin-items-div";
 notPinItemsDiv.className = "not-pin-items-div";
@@ -97,17 +113,6 @@ document.body.appendChild(loadingDiv);
 //   contextMenu.classList.add("hidden");
 // });
 
-const getLocalStorage = async (key) => {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(key, resolve);
-  });
-};
-
-let dLStorage = await getLocalStorage("yourItemList");
-let storedItemList = dLStorage.yourItemList || [];
-console.log("Loaded items:", storedItemList);
-dLStorage = null;
-
 async function loadInterface(tab) {
   try {
     const tabToDisplay = tab || "";
@@ -150,7 +155,7 @@ const getNumberOfItems = async () => {
     console.error(`Ошибка в getNumberOfItems: ${error}`);
     return 0;
   }
-}
+};
 const getCorrectSize = async (bytes) => {
   const sizeUnits = ["B", "KB", "MB"];
   let unitIndex = 0;
@@ -161,7 +166,7 @@ const getCorrectSize = async (bytes) => {
   }
 
   return `${bytes.toFixed(2)} ${sizeUnits[unitIndex]}`;
-}
+};
 window.addEventListener("load", (event) => {
   console.log("removing loading items");
   loadingDiv.remove();
@@ -172,35 +177,6 @@ function displayItems(itemListData) {
   notPinItemsDiv.innerHTML = "";
   itemListData.map((item) => addNewItem(item));
 }
-function createTabsInHeader() {
-  const uniqueTabs = Array.from(
-    new Set(storedItemList.map((item) => item.tab))
-  );
-  const tabsToDisplay = [
-    "Main",
-    "Fav",
-    ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
-  ];
-  const tabList = document.getElementById("tab-list");
-  tabList.innerHTML = "";
-
-  tabsToDisplay.forEach((tabName) => {
-    const tabElement = createTabElement(tabName);
-    tabList.appendChild(tabElement);
-  });
-  highlightActiveTab("Main");
-}
-function createTabElement(tabName) {
-  const tabElement = document.createElement("div");
-  tabElement.innerText = tabName;
-  tabElement.id = tabName;
-  tabElement.className = "tab other-tab";
-  tabElement.addEventListener("click", () => {
-    highlightActiveTab(tabName);
-    tabName === "Main" ? loadInterface() : loadInterface(tabName);
-  });
-  return tabElement;
-}
 function highlightActiveTab(activeTab) {
   const tabList = document.getElementById("tab-list");
   tabList.childNodes.forEach((tab) => {
@@ -208,8 +184,8 @@ function highlightActiveTab(activeTab) {
   });
 }
 function addNewItem(item) {
-  const notPinnedItem = createElement("div", "item");
-  const pinnedItem = createElement("div", "pin item");
+  const notPinnedItem = createElements("div", "item");
+  const pinnedItem = createElements("div", "pin item");
 
   const itemContent = item.hide
     ? item.hide === false
@@ -259,41 +235,7 @@ function addNewItem(item) {
 
   listOfItems.append(pinItemsDiv, notPinItemsDiv);
 }
-function createElement(tag, className) {
-  const element = document.createElement(tag);
-  if (className) element.className = className;
-  return element;
-}
-function createButton(label, className, clickHandler) {
-  const button = createElement('button', className);
-  button.innerText = label;
-  button.type = "button";
-  button.addEventListener("click", clickHandler);
-  return button;
-}
-// function createDropdownList(item) {
-//   const dropdownList = document.createElement("select");
-//   dropdownList.className = "dropdown-list";
 
-//   const defaultOption = document.createElement("option");
-//   defaultOption.text = "Move to...";
-//   defaultOption.value = "";
-//   dropdownList.add(defaultOption);
-
-//   const tabList = document.getElementById("tab-list");
-//   tabList.childNodes.forEach((tab) => {
-//     const option = document.createElement("option");
-//     option.value = tab.innerText;
-//     option.text = tab.innerText;
-//     dropdownList.add(option);
-//   });
-
-//   dropdownList.addEventListener("change", () => {
-//     moveItemToTab(item, dropdownList.value);
-//   });
-
-//   return dropdownList;
-// }
 function deleteItem(createdAt) {
   console.log("Preparing to delete item with createdAt:", createdAt);
   // Вызываем обе функции
@@ -307,9 +249,9 @@ function removeItemFromUI(createdAt) {
 
   if (itemToRemove) {
     itemToRemove.remove();
-    createAnimatedElement("Item deleted from UI successfully", "#71e997");
+    createMessage("Item deleted from UI successfully", "#71e997");
   } else {
-    createAnimatedElement("Something went wrong during deleting item from UI");
+    createMessage("Something went wrong during deleting item from UI");
     console.error(
       "Something went wrong during deleting item from UI with createdAt:",
       createdAt
@@ -325,13 +267,10 @@ function removeItemFromLocalStorage(createdAt) {
     storedItemList.splice(indexToRemove, 1);
 
     chrome.storage.local.set({ yourItemList: storedItemList }, function () {
-      createAnimatedElement(
-        "Item deleted from local storage successfully",
-        "#71e997"
-      );
+      createMessage("Item deleted from local storage successfully", "#71e997");
     });
   } else {
-    createAnimatedElement("Item not found in local storage");
+    createMessage("Item not found in local storage");
     console.error("Item not found in local storage with createdAt:", createdAt);
   }
 }
@@ -382,11 +321,11 @@ function hideNshowItem(item) {
 // }
 
 function buildDropdownMenu(item) {
-  const dropdownMenu = createElement("div", "dropdown-menu");
+  const dropdownMenu = createElements("div", "dropdown-menu");
 
   const tabList = document.getElementById("tab-list");
   tabList.childNodes.forEach((tab) => {
-    const tabElement = createElement("div");
+    const tabElement = createElements("div");
     tabElement.innerText = tab.innerText;
     tabElement.addEventListener("click", () => {
       moveItemToTab(item, tabElement.innerText);
@@ -400,23 +339,7 @@ function moveItemToTab(item, tabToMove) {
   item.tab = tabToMove;
   updateItemInLocalStorage(item);
 }
-function createTextArea(content) {
-  const textarea = document.createElement("textarea");
-  textarea.value = content;
 
-  // Используем событие 'input' для динамического изменения высоты при вводе
-  textarea.addEventListener("input", function () {
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
-  });
-  // Используем событие 'focus' для корректного изменения высоты при редактировании
-  textarea.addEventListener("focus", function () {
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
-  });
-
-  return textarea;
-}
 function confirmEdit(item, textarea) {
   item.itemData = textarea.value;
   updateItemInLocalStorage(item);
@@ -436,6 +359,152 @@ function recognitionItems(item) {
 
   return newElement;
 }
+
+function updateItemInLocalStorage(item) {
+  console.log("prepare to update local storage with item:", item);
+
+  // Find the index of the item in local storage
+  const index = storedItemList.findIndex(
+    (storedItem) => storedItem.createdAt === item.createdAt
+  );
+
+  if (index !== -1) {
+    // Update the item's content
+    storedItemList[index] = item;
+    console.log("item in stored storage replaced with new item content", item);
+
+    // Save the updated list to local storage
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      console.log("item in local storage replaced with new item content", item);
+      loadInterface(getCurrentTab());
+    });
+  } else {
+    createMessage("something went wrong during updating local storage");
+    console.error("something went wrong during updating local storage");
+  }
+}
+let activeItem = null;
+
+function getCurrentTab() {
+  const activeTabElement = document.querySelector(".active-tab");
+  let activeTab = "";
+  if (activeTabElement) {
+    activeTab = activeTabElement.innerText;
+    return activeTab;
+  }
+}
+
+async function saveNewItem(item) {
+  console.log("saving item");
+  return new Promise((resolve, reject) => {
+    storedItemList.push(item);
+
+    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
+      console.log("Item saved successfully:", item);
+      resolve();
+    });
+  });
+}
+const popupInfo = document.getElementById("popup-info");
+async function showInfo() {
+  const itemsNumber = document.getElementById("items-number");
+  const itemsSize = document.getElementById("items-size");
+
+  const a = await getNumberOfItems();
+  const b = await getLocalSize();
+
+  itemsNumber.textContent = a;
+  itemsSize.textContent = b;
+
+  popupInfo.style.display = "flex";
+}
+function hideInfo() {
+  const itemsNumber = document.getElementById("items-number");
+  const itemsSize = document.getElementById("items-size");
+
+  itemsNumber.textContent = "";
+  itemsSize.textContent = "";
+
+  popupInfo.style.display = "none";
+}
+function clearItemList() {
+  pinItemsDiv.innerHTML = "";
+  notPinItemsDiv.innerHTML = "";
+  createMessage("all items deleted from interface", "#71e997");
+
+  chrome.storage.local.remove("yourItemList");
+  createMessage("all items deleted from local storage", "#71e997");
+
+  loadInterface(getCurrentTab());
+}
+function createTabElement(tabName) {
+  const tabElement = document.createElement("div");
+  tabElement.innerText = tabName;
+  tabElement.id = tabName;
+  tabElement.className = "tab other-tab";
+  tabElement.addEventListener("click", () => {
+    highlightActiveTab(tabName);
+    tabName === "Main" ? loadInterface() : loadInterface(tabName);
+  });
+  return tabElement;
+}
+
+function createNewItemWithInput() {
+  // Если уже есть активный элемент, удаляем его
+  if (activeItem) {
+    activeItem.remove();
+  }
+
+  const activeTab = getCurrentTab();
+
+  const textArea = createTextArea("");
+  textArea.placeholder = "Введите текст...";
+
+  const div = createElements("div", "item");
+
+  const confirmButton = createButton("Confirm", "confirm-button", function () {
+    const text = textArea.value;
+    if (text !== "") {
+      const newItem = {
+        createdAt: new Date().getTime(),
+        title: "",
+        itemData: text,
+        pinned: false,
+        hide: false,
+        fav: false,
+        color: "",
+        tab: activeTab,
+        list: "",
+      };
+      saveNewItem(newItem)
+        .then(() => loadInterface(activeTab))
+        .catch((error) => {
+          createMessage("something went wrong during saving new custom item");
+          console.error("Error during saving new item:", error);
+          // Обработка ошибок при сохранении
+        });
+      div.remove();
+    } else {
+      createMessage("Новый элемент не может быть пустым!");
+    }
+  });
+
+  const cancelButton = createButton("Cancel", "cancel-button", function () {
+    div.remove();
+  });
+  div.append(textArea, confirmButton, cancelButton);
+
+  textArea.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      confirmButton.click();
+    }
+  });
+  listOfItems.insertBefore(div, listOfItems.firstChild);
+
+  activeItem = div;
+  textArea.focus();
+}
+
 function createTextWithImageElement(parent, text) {
   let remainingText = text;
 
@@ -486,6 +555,72 @@ function createTextWithImageElement(parent, text) {
       }
     }
   }
+}
+
+function createMessage(text, bgColor) {
+  const existingElements = document.querySelectorAll(".animated-element");
+
+  existingElements.forEach((existingElement) => {
+    const currentBottom = parseFloat(existingElement.style.bottom);
+    existingElement.style.bottom = `${currentBottom + 45}px`;
+    existingElement.animate(
+      [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }],
+      { duration: 150, easing: "ease-out", fill: "forwards" }
+    );
+  });
+
+  const element = createElements("div", "animated-element");
+  element.style.backgroundColor = bgColor || "#db3232";
+  element.style.bottom = "45px";
+
+  const span = document.createElement("span");
+  span.textContent = text || "UwU";
+  span.style.cssText =
+    "display: flex; align-items: center; justify-content: center; width: 100%;";
+
+  element.appendChild(span);
+  document.body.appendChild(element);
+
+  const textWidth = span.offsetWidth;
+  element.style.width =
+    textWidth > parseInt(element.style.width)
+      ? textWidth + "px"
+      : element.style.width;
+
+  element.animate(
+    [
+      { transform: "translateY(100%)", opacity: 0 },
+      { transform: "translateY(0)", opacity: 1 },
+    ],
+    { duration: 150, easing: "ease-out", fill: "forwards" }
+  );
+
+  // Удаляем элемент через 2.5 секунды
+  setTimeout(() => element.remove(), 2500);
+}
+
+function createNumberedList(number) {
+  console.log(`creating ${number} items`);
+  const itemList = [];
+
+  for (let i = 1; i <= number; i++) {
+    const newItem = {
+      createdAt: new Date().getTime(),
+      title: "",
+      itemData: `item №${i}`,
+      pinned: false,
+      hide: false,
+      fav: false,
+      color: "",
+      tab: "",
+      list: "",
+    };
+
+    itemList.push(newItem);
+  }
+  itemList.forEach(function (item) {
+    addNewItem(item);
+  });
 }
 
 function createImageElement(imageUrl) {
@@ -545,6 +680,7 @@ function createImageElement(imageUrl) {
   imgElement.style.cursor = "pointer";
   return imgElement;
 }
+
 function createLinkElement(linkUrl) {
   const linkElement = document.createElement("a");
   linkElement.href = linkUrl;
@@ -552,215 +688,96 @@ function createLinkElement(linkUrl) {
   linkElement.textContent = linkUrl;
   return linkElement;
 }
+
 function createEmptyElement(parentElement) {
-  createAnimatedElement("Invalid item type");
+  createMessage("Invalid item type");
   console.error("Invalid item type");
   const empty = document.createElement("span");
   empty.appendChild(document.createTextNode("Empty."));
   parentElement.appendChild(empty);
 }
-function updateItemInLocalStorage(item) {
-  console.log("prepare to update local storage with item:", item);
 
-  // Find the index of the item in local storage
-  const index = storedItemList.findIndex(
-    (storedItem) => storedItem.createdAt === item.createdAt
+function createTextArea(content) {
+  const textarea = document.createElement("textarea");
+  textarea.value = content;
+
+  // Используем событие 'input' для динамического изменения высоты при вводе
+  textarea.addEventListener("input", function () {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+  });
+  // Используем событие 'focus' для корректного изменения высоты при редактировании
+  textarea.addEventListener("focus", function () {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+  });
+
+  return textarea;
+}
+
+function createElements(tag, className) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  return element;
+}
+
+function createButton(label, className, clickHandler) {
+  const button = createElements("button", className);
+  button.innerText = label;
+  button.type = "button";
+  button.addEventListener("click", clickHandler);
+  return button;
+}
+
+function createDropdownList(item) {
+  const dropdownList = document.createElement("select");
+  dropdownList.className = "dropdown-list";
+
+  const defaultOption = document.createElement("option");
+  defaultOption.text = "Move to...";
+  defaultOption.value = "";
+  dropdownList.add(defaultOption);
+
+  const tabList = document.getElementById("tab-list");
+  tabList.childNodes.forEach((tab) => {
+    const option = document.createElement("option");
+    option.value = tab.innerText;
+    option.text = tab.innerText;
+    dropdownList.add(option);
+  });
+
+  dropdownList.addEventListener("change", () => {
+    moveItemToTab(item, dropdownList.value);
+  });
+
+  return dropdownList;
+}
+
+function createTabsInHeader() {
+  const uniqueTabs = Array.from(
+    new Set(storedItemList.map((item) => item.tab))
   );
+  const tabsToDisplay = [
+    "Main",
+    "Fav",
+    ...uniqueTabs.filter((tab) => tab && !["Main", "Fav"].includes(tab)),
+  ];
+  const tabList = document.getElementById("tab-list");
+  tabList.innerHTML = "";
 
-  if (index !== -1) {
-    // Update the item's content
-    storedItemList[index] = item;
-    console.log("item in stored storage replaced with new item content", item);
-
-    // Save the updated list to local storage
-    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
-      console.log("item in local storage replaced with new item content", item);
-      loadInterface(getCurrentTab());
-    });
-  } else {
-    createAnimatedElement("something went wrong during updating local storage");
-    console.error("something went wrong during updating local storage");
-  }
-}
-let activeItem = null;
-function createNewItemWithInput() {
-  // Если уже есть активный элемент, удаляем его
-  if (activeItem) {
-    activeItem.remove();
-  }
-
-  const activeTab = getCurrentTab();
-
-  const textArea = createTextArea("");
-  textArea.placeholder = "Введите текст...";
-
-  const div = document.createElement("div", "item");
-
-  const confirmButton = createButton("Confirm", "confirm-button", function () {
-    const text = textArea.value;
-    if (text !== "") {
-      const newItem = {
-        createdAt: new Date().getTime(),
-        title: "",
-        itemData: text,
-        pinned: false,
-        hide: false,
-        fav: false,
-        color: "",
-        tab: activeTab,
-        list: "",
-      };
-      saveNewItem(newItem)
-        .then(() => loadInterface(activeTab))
-        .catch((error) => {
-          createAnimatedElement(
-            "something went wrong during saving new custom item"
-          );
-          console.error("Error during saving new item:", error);
-          // Обработка ошибок при сохранении
-        });
-      div.remove();
-    } else {
-      createAnimatedElement("Новый элемент не может быть пустым!");
-    }
+  tabsToDisplay.forEach((tabName) => {
+    const tabElement = createTabElement(tabName);
+    tabList.appendChild(tabElement);
   });
-
-  const cancelButton = createButton("Cancel", "cancel-button", function () {
-    div.remove();
-  });
-  div.append(textArea, confirmButton, cancelButton);
-
-  textArea.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-      confirmButton.click();
-    }
-  });
-  listOfItems.insertBefore(div, listOfItems.firstChild);
-
-  activeItem = div;
-  textArea.focus();
+  highlightActiveTab("Main");
 }
-function getCurrentTab() {
-  const activeTabElement = document.querySelector(".active-tab");
-  let activeTab = "";
-  if (activeTabElement) {
-    activeTab = activeTabElement.innerText;
-    return activeTab;
-  }
-}
-function createAnimatedElement(text, bgColor) {
-  const existingElements = document.querySelectorAll(".animated-element");
 
-  existingElements.forEach((existingElement) => {
-    const currentBottom = parseFloat(existingElement.style.bottom);
-    existingElement.style.bottom = `${currentBottom + 45}px`;
-    existingElement.animate(
-      [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }],
-      { duration: 150, easing: "ease-out", fill: "forwards" }
-    );
-  });
-
-  const element = document.createElement("div", "animated-element");
-  element.style.backgroundColor = bgColor || "#db3232";
-  element.style.bottom = "45px";
-
-  const span = document.createElement("span");
-  span.textContent = text || "UwU";
-  span.style.cssText =
-    "display: flex; align-items: center; justify-content: center; width: 100%;";
-
-  element.appendChild(span);
-  document.body.appendChild(element);
-
-  const textWidth = span.offsetWidth;
-  element.style.width =
-    textWidth > parseInt(element.style.width)
-      ? textWidth + "px"
-      : element.style.width;
-
-  element.animate(
-    [
-      { transform: "translateY(100%)", opacity: 0 },
-      { transform: "translateY(0)", opacity: 1 },
-    ],
-    { duration: 150, easing: "ease-out", fill: "forwards" }
-  );
-
-  // Удаляем элемент через 2.5 секунды
-  setTimeout(() => element.remove(), 2500);
-}
-async function saveNewItem(item) {
-  console.log("saving item");
-  return new Promise((resolve, reject) => {
-    storedItemList.push(item);
-
-    chrome.storage.local.set({ yourItemList: storedItemList }, function () {
-      console.log("Item saved successfully:", item);
-      resolve();
-    });
-  });
-}
-const popupInfo = document.getElementById("popup-info");
-async function showInfo() {
-  const itemsNumber = document.getElementById("items-number");
-  const itemsSize = document.getElementById("items-size");
-
-  const a = await getNumberOfItems();
-  const b = await getLocalSize();
-
-  itemsNumber.textContent = a;
-  itemsSize.textContent = b;
-
-  popupInfo.style.display = "flex";
-}
-function hideInfo() {
-  const itemsNumber = document.getElementById("items-number");
-  const itemsSize = document.getElementById("items-size");
-
-  itemsNumber.textContent = "";
-  itemsSize.textContent = "";
-
-  popupInfo.style.display = "none";
-}
-function clearItemList() {
-  pinItemsDiv.innerHTML = "";
-  notPinItemsDiv.innerHTML = "";
-  createAnimatedElement("all items deleted from interface", "#71e997");
-
-  chrome.storage.local.remove("yourItemList");
-  createAnimatedElement("all items deleted from local storage", "#71e997");
-
-  loadInterface(getCurrentTab());
-}
-function createNumberedList(number) {
-  console.log(`creating ${number} items`);
-  const itemList = [];
-
-  for (let i = 1; i <= number; i++) {
-    const newItem = {
-      createdAt: new Date().getTime(),
-      title: "",
-      itemData: `item №${i}`,
-      pinned: false,
-      hide: false,
-      fav: false,
-      color: "",
-      tab: "",
-      list: "",
-    };
-
-    itemList.push(newItem);
-  }
-  itemList.forEach(function (item) {
-    addNewItem(item);
-  });
-}
 infoButton.addEventListener("mouseenter", () => showInfo());
 infoButton.addEventListener("mouseleave", () => hideInfo());
 clearAllButton.addEventListener("click", clearItemList);
 createItemButton.addEventListener("click", createNewItemWithInput);
 refreshButton.addEventListener("click", () => loadInterface(getCurrentTab()));
 sendMessage.addEventListener("click", () =>
-  createAnimatedElement("Проверка-проверка!!")
+  createMessage("Проверка-проверка!!")
 );
 create1000.addEventListener("click", () => createNumberedList(1000));
