@@ -3,9 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мониторинг сервера и бота</title>
+    <title>Bot Manager</title>
 </head>
 <body>
-    <h1>Мониторинг сервера и бота</h1>
+    <h1>Bot Manager</h1>
+    <button onclick="startServer()">Start Server</button>
+    <button onclick="startBot()">Start Bot</button>
+    <button onclick="stopProcesses()">Stop All</button>
+    <script>
+        function startServer() {
+            fetch('/start_server').then(response => console.log(response.text()));
+        }
+
+        function startBot() {
+            fetch('/start_bot').then(response => console.log(response.text()));
+        }
+
+        function stopProcesses() {
+            fetch('/stop_processes').then(response => console.log(response.text()));
+        }
+    </script>
 </body>
 </html>
