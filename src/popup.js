@@ -351,7 +351,7 @@ function recognitionItems(item) {
   // Create a new element based on the item type
   let newElement = document.createElement("div");
 
-  if (item.itemData) {
+  if (typeof item.itemData === 'string' && item.itemData.trim() !== '') {
     createTextWithImageElement(newElement, item.itemData);
   } else {
     createEmptyElement(newElement);
@@ -691,9 +691,8 @@ function createLinkElement(linkUrl) {
 
 function createEmptyElement(parentElement) {
   createMessage("Invalid item type");
-  console.error("Invalid item type");
   const empty = document.createElement("span");
-  empty.appendChild(document.createTextNode("Empty."));
+  empty.appendChild(document.createTextNode("UwU"));
   parentElement.appendChild(empty);
 }
 
