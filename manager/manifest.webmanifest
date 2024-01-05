@@ -1,0 +1,23 @@
+{
+  "name": "Manager App",
+  "short_name": "Manager",
+  "description": "Your app description",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icons/icon_128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ],
+  "scope": "/",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "serviceworker": {
+    "src": "/service-worker.js",
+    "scope": "/"
+  }
+}

@@ -54,15 +54,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   } else if (request.command === "imageProcessed" && request.formattedText) {
     console.log("got formatted text");
     const newItem = {
-      createdAt: new Date().getTime(),
-      title: "",
       itemData: request.formattedText,
-      pinned: false,
-      hide: false,
-      fav: false,
-      color: "",
-      tab: "",
-      list: "",
     };
 
     // Сохраняем новый элемент
@@ -71,7 +63,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 function saveItem(info) {
   const selected =
-    info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || "";
+    info.selectionText || info.srcUrl || info.linkUrl || info.videoUrl || info.itemData || "";
 
   let itemData;
   itemData = selected;
@@ -86,6 +78,7 @@ function saveItem(info) {
     color: "",
     tab: "",
     list: "",
+    link: "",
   };
 
   saveNewItem(newItem);
@@ -108,7 +101,7 @@ function dataURItoBlob(dataURI) {
   return new Blob([arrayBuffer], { type: mimeString });
 }
 
-function sendFileToServer(item) {
+function sendFileToBridge(item) {
   const serverEndpoint = "http://localhost:3000/sendToTelegram";
 
   try {
@@ -157,7 +150,7 @@ function handleNetworkError(error) {
 function saveNewItem(item) {
   // sendToServer(item.itemData);
 
-  sendFileToServer(item);
+  sendFileToBridge(item);
 
   console.log("Saving new item:", item);
   chrome.storage.local.get("yourItemList", function (data) {
