@@ -25,7 +25,8 @@ app.post("/sendToTelegram", upload.single('file'), async (req, res) => {
   try {
     if (req.file) {
       const fileName = req.body.createdAt || "UwU";
-      await sendFileToUser(req.file.buffer, fileName);
+      const file = req.file.buffer;
+      await sendFileToUser(file, fileName);
     } else if (req.body) {
       await sendStringToUser(req.body);
     }

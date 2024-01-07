@@ -1,109 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Manager</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: Arial, sans-serif;
-        }
-        .button-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Два столбца одинаковой ширины */
-            gap: 10px; /* Зазор между кнопками */
-            width: 80%; /* Ширина контейнера с кнопками */
-            margin-top: 10px;
-        }
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
 
-        button {
-            width: 100%; /* Ширина кнопки, учитывая небольшой зазор между кнопками */
-            margin: 5px;
-        }
+      .button-container {
+        display: flex;
+        justify-content: space-between;
+        max-width: 600px;
+        width: 100%;
+      }
 
-        #terminalOutput {
-            height: 400px;
-            width: 80%;
-            border: 1px solid #ccc;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
+      .button-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border: 1px solid #ccc;
+        padding: 10px;
+        width: 48%;
+        box-sizing: border-box;
+        border-radius: 8px;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #83a1b9;
+        color: #ffffff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #7291ab;
+      }
+
+      #terminalOutput {
+        height: 400px;
+        width: 100%;
+        border: 1px solid #ccc;
+        overflow-y: auto;
+        margin-top: 20px;
+        padding: 10px;
+        box-sizing: border-box;
+        border-radius: 8px;
+      }
+
+      .resourceMonitor {
+        width: 100%;
+        border: 1px solid #ccc;
+        padding: 10px;
+        box-sizing: border-box;
+        border-radius: 8px;
+      }
+      canvas {
+        border: 1px solid #ccc;
+      }
     </style>
-</head>
-<body>
-    <h1>Manager</h1>
-    <div class="button-container">
-        <!-- Кнопки для манипуляций с сервером -->
-        <div class="bridge-buttons">
-            <button onclick="startbridge()">Start bridge</button>
-            <button onclick="restartbridge()">Restart bridge</button>
-            <button onclick="stopbridge()">Stop bridge</button>
-            <button onclick="sendFile()">Send file</button>
-        </div>
-        <!-- Кнопки для манипуляций с ботом -->
-        <div class="bot-buttons">
-            <button onclick="startBot()">Start Bot</button>
-            <button onclick="restartBot()">Restart Bot</button>
-            <button onclick="stopBot()">Stop Bot</button>
-        </div>
+  </head>
+  <body>
+    <div>
+      <h2>Server Memory Usage</h2>
+      <canvas id="serverMemoryChart" width="600" height="300"></canvas>
     </div>
-    <ul id="terminalOutput"></ul>
-    <script>
-        const socket = io.connect('http://' + document.domain + ':' + location.port);
-
-        socket.on('terminal_output', function(data) {
-            const outputList = document.getElementById('terminalOutput');
-            const li = document.createElement('li');
-            li.appendChild(document.createTextNode(data.output));
-            outputList.appendChild(li);
-
-            outputList.scrollTop = outputList.scrollHeight;
-        });
-
-        function startbridge() {
-            fetch('/start/bridge').then(response => console.log(response.text()));
-        }
-
-        function restartbridge() {
-            fetch('/restart/bridge').then(response => console.log(response.text()));
-        }
-
-        function stopbridge() {
-            fetch('/stop/bridge').then(response => console.log(response.text()));
-        }
-
-        function startBot() {
-            fetch('/start/bot').then(response => console.log(response.text()));
-        }
-
-        function restartBot() {
-            fetch('/restart/bot').then(response => console.log(response.text()));
-        }
-
-        function stopBot() {
-            fetch('/stop/bot').then(response => console.log(response.text()));
-        }
-        function sendFile() {
-            fetch('/send/file').then(response => console.log(response.text()));
-        }
-    </script>
-    <!-- <script>
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then((registration) => {
-              console.log('Service Worker registered with scope:', registration.scope);
-            })
-            .catch((error) => {
-              console.error('Service Worker registration failed:', error);
-            });
-        }
-    </script> -->
-</body>
+    <div>
+      <h2>Bot Memory Usage</h2>
+      <canvas id="botMemoryChart" width="600" height="300"></canvas>
+    </div>
+    <div class="button-container">
+      <div class="button-group">
+        <div id="serverMonitor" class="resourceMonitor"></div>
+        <button onclick="startProcess('bridge')">Start bridge</button>
+        <button onclick="restartProcess('bridge')">Restart bridge</button>
+        <button onclick="stopProcess('bridge')">Stop bridge</button>
+        <button onclick="sendFile()">Send file</button>
+      </div>
+      <div class="button-group">
+        <div id="botMonitor" class="resourceMonitor"></div>
+        <button onclick="startProcess('bot')">Start Bot</button>
+        <button onclick="restartProcess('bot')">Restart Bot</button>
+        <button onclick="stopProcess('bot')">Stop Bot</button>
+      </div>
+    </div>
+    <div id="terminalOutput"></div>
+    <script src="index.js"></script>
+  </body>
 </html>

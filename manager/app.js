@@ -4,6 +4,7 @@ const { Server } = require("socket.io");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const pidusage = require('pidusage');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,47 +15,49 @@ const outputQueue = [];
 let bridgeProcess, botProcess;
 
 async function sendFileToServer() {
-  const serverEndpoint = "http://localhost:3000/sendToTelegram";
-  const filePath = path.join(__dirname, "./icons/file.png");
+  try {
+    const serverEndpoint = "http://localhost:3000/sendToTelegram";
+    const filePath = path.join(__dirname, "./icons/file.png");
 
-  // Чтение файла в виде буфера
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      console.error("Error reading file:", err);
-      return;
-    }
-    // Создание Blob из данных файла
+    // Асинхронное чтение файла
+    const data = await fs.promises.readFile(filePath);
+
     const fileBlob = new Blob([data]);
-
-    // Отправка файла на сервер
     const formData = new FormData();
     formData.append("file", fileBlob, { filename: "file.png" });
 
-    fetch(serverEndpoint, { method: "POST", body: formData })
-      .then(handleResponse)
-      .catch(handleError);
-  });
+    const response = await fetch(serverEndpoint, {
+      method: "POST",
+      body: formData,
+    });
+    handleResponse(response);
+  } catch (error) {
+    handleError(error);
+  }
 }
 function handleResponse(response) {
   if (!response.ok) {
-    throw new Error(`HTTP error! Status: ${response.status}`);
+    logOutput(`HTTP error! Status: ${response.status}`);
   }
   return response.json();
 }
 function handleError(error) {
-  console.error("Error sending data to server:", error.message);
+  logOutput(`Error sending data to server:${error.message}`)
   handleNetworkError(error);
 }
 function handleNetworkError(error) {
   if (error.message.includes("ENOTFOUND")) {
-    console.error(
-      "Ошибка: Не удалось разрешить DNS. Возможно, проблемы с интернет-соединением."
-    );
+    logOutput("Ошибка: Не удалось разрешить DNS. Возможно, проблемы с интернет-соединением.");
   } else {
-    console.error("Другая ошибка сети:", error.message);
+    logOutput(`Другая ошибка сети:${error.message}`);
   }
 }
-
+function cfl(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function logOutput(output) {
+  outputQueue.push({ output });
+}
 async function manageProcess(scriptName, action) {
   try {
     const actions = {
@@ -67,21 +70,12 @@ async function manageProcess(scriptName, action) {
     outputQueue.push({ output: actions[action] });
 
     const startProcess = () => {
-      const process = spawn("node", [`./manager/${scriptName}.js`]);
-      process.stdout.on("data", (data) => {
-        const output = data.toString();
-        outputQueue.push({ output });
-        emitTerminalOutput();
-      });
-
-      process.stderr.on("data", (data) => {
-        const output = data.toString();
-        outputQueue.push({ output });
-        emitTerminalOutput();
-      });
-
+      const process = spawn("node", [`${scriptName}.js`]);
+      process.stdout.on("data", (data) => logOutput(data.toString()));
+      process.stderr.on("data", (data) => logOutput(data.toString()));
       return process;
     };
+
     const stopProcess = (process) => {
       if (process) {
         process.kill();
@@ -96,9 +90,7 @@ async function manageProcess(scriptName, action) {
       } else if (scriptName === "bot") {
         botProcess = startProcess();
       }
-      outputQueue.push({ output: `${
-        scriptName.charAt(0).toUpperCase() + scriptName.slice(1)
-      } ${action}ed` });
+      logOutput(`${cfl(scriptName)} ${action}ed`);
     } else if (action === "restart") {
       if (scriptName === "bridge") {
         stopProcess(bridgeProcess);
@@ -107,32 +99,64 @@ async function manageProcess(scriptName, action) {
         stopProcess(botProcess);
         botProcess = startProcess();
       }
-      outputQueue.push({ output: `${
-        scriptName.charAt(0).toUpperCase() + scriptName.slice(1)
-      } ${action}ed` });
+      logOutput(`${cfl(scriptName)} ${action}ed`);
     } else if (action === "stop") {
       if (scriptName === "bridge") {
         stopProcess(bridgeProcess);
       } else if (scriptName === "bot") {
         stopProcess(botProcess);
       }
-      outputQueue.push({ output: "Processes stopped" });
+      logOutput("Processes stopped");
     } else if (action === "send") {
-        await sendFileToServer();
-        outputQueue.push({ output: "File sending initiated" });
-      }
+      await sendFileToServer();
+      logOutput("File sending initiated");
+    }
   } catch (error) {
-    outputQueue.push({ output: { error: error.toString() } });
+    logOutput({ error: error.toString() });
   }
 }
-
-function emitTerminalOutput() {
+async function emitTerminalOutput() {
   const outputLine = outputQueue.shift();
   if (outputLine) {
     io.emit("terminal_output", outputLine);
   }
 }
-
+async function bridgeStatus() {
+    const serverProcessStatus = await getProcessInfo(bridgeProcess);
+    io.emit("server_process_status", serverProcessStatus);
+}
+async function botStatus() {
+    const botProcessStatus = await getProcessInfo(botProcess);
+    io.emit("bot_process_status", botProcessStatus);
+}
+async function getProcessInfo(process) {
+  if (process) {
+    try {
+      const stats = await pidusage(process.pid);
+      return {
+        pid: process ? process.pid : null,
+        running: process ? !process.killed : false,
+        memory: stats.memory / (1024 * 1024),
+        cpu: stats.cpu,
+      };
+    } catch (error) {
+      logOutput(`Error getting process resources: ${error}`);
+      return {
+        pid: process ? process.pid : null,
+        running: process ? !process.killed : false,
+        memory: "-",
+        cpu: "-",
+      };
+    }
+  } else {
+    return {
+      pid: process ? process.pid : null,
+      running: process ? !process.killed : false,
+      memory: "-",
+      cpu: "-",
+    };
+  }
+}
 app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
@@ -147,7 +171,11 @@ app.get("/:action/:script", async (req, res) => {
 });
 
 io.on("connect", (socket) => {
-  setInterval(emitTerminalOutput, 1000);
+  setInterval(async () => {
+    await emitTerminalOutput();
+    await botStatus();
+    await bridgeStatus();
+  }, 1000);
 });
 
 server.listen(5000, () => {
